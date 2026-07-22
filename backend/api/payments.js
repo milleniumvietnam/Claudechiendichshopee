@@ -1,27 +1,25 @@
 // SePay VietQR Payment Integration
 // Handle QR code generation, payment verification, webhook processing
 
-const axios = require('axios');
-const crypto = require('crypto');
+import axios from 'axios'
+import crypto from 'crypto'
 
-class SePayAPI {
+export default class SePayAPI {
   constructor(apiKey, secretKey, merchantId) {
-    this.apiKey = apiKey;
-    this.secretKey = secretKey;
-    this.merchantId = merchantId;
-    this.baseURL = 'https://api.sepay.vn/v3';
+    this.apiKey = apiKey
+    this.secretKey = secretKey
+    this.merchantId = merchantId
+    this.baseURL = 'https://api.sepay.vn/v3'
   }
 
-  // Generate request signature
   generateSignature(data) {
-    const payload = JSON.stringify(data);
+    const payload = JSON.stringify(data)
     return crypto
       .createHmac('sha256', this.secretKey)
       .update(payload)
-      .digest('hex');
+      .digest('hex')
   }
 
-  // Create payment QR code request
   async createQRCode(orderData) {
     try {
       const payload = {
@@ -35,7 +33,7 @@ class SePayAPI {
           orderId: orderData.orderId,
           amount: orderData.amount,
         }),
-      };
+      }
 
       const config = {
         method: 'post',
@@ -45,24 +43,22 @@ class SePayAPI {
           'Authorization': `Bearer ${this.apiKey}`,
         },
         data: payload,
-      };
+      }
 
-      const response = await axios(config);
-      return response.data;
+      const response = await axios(config)
+      return response.data
     } catch (error) {
-      console.error('SePay API Error:', error.response?.data || error.message);
-      throw error;
+      console.error('SePay API Error:', error.response?.data || error.message)
+      throw error
     }
   }
 
-  // Verify payment with signature
   verifyPaymentSignature(webhookData) {
-    const { signature, ...data } = webhookData;
-    const calculatedSignature = this.generateSignature(data);
-    return signature === calculatedSignature;
+    const { signature, ...data } = webhookData
+    const calculatedSignature = this.generateSignature(data)
+    return signature === calculatedSignature
   }
 
-  // Get transaction history
   async getTransactions(filters = {}) {
     try {
       const config = {
@@ -75,25 +71,24 @@ class SePayAPI {
           merchantId: this.merchantId,
           ...filters,
         },
-      };
+      }
 
-      const response = await axios(config);
-      return response.data;
+      const response = await axios(config)
+      return response.data
     } catch (error) {
-      console.error('SePay API Error:', error.response?.data || error.message);
-      throw error;
+      console.error('SePay API Error:', error.response?.data || error.message)
+      throw error
     }
   }
 
-  // Generate VietQR static code (reusable)
   async generateVietQRStatic(accountNumber, bankCode, amount) {
     try {
       const payload = {
         accountNo: accountNumber,
-        bankCode: bankCode, // e.g., 'MB' for Techcombank
+        bankCode: bankCode,
         amount: amount,
         description: 'Thanh toan hang Kinh Doanh Shopee',
-      };
+      }
 
       const config = {
         method: 'post',
@@ -103,15 +98,13 @@ class SePayAPI {
           'Authorization': `Bearer ${this.apiKey}`,
         },
         data: payload,
-      };
+      }
 
-      const response = await axios(config);
-      return response.data;
+      const response = await axios(config)
+      return response.data
     } catch (error) {
-      console.error('SePay API Error:', error.response?.data || error.message);
-      throw error;
+      console.error('SePay API Error:', error.response?.data || error.message)
+      throw error
     }
   }
 }
-
-module.exports = SePayAPI;

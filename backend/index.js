@@ -1,21 +1,26 @@
-// Main Express Server
-// Kinh Doanh Shopee - Backend API
-
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-
-const ShopeeAPI = require('./api/shopee');
-const SePayAPI = require('./api/payments');
-const TelegramBot = require('./bot/telegram');
+// Main Express Server - Kinh Doanh Shopee Backend API
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { PrismaClient } from '@prisma/client';
+import ShopeeAPI from './api/shopee.js';
+import SePayAPI from './api/payments.js';
+import TelegramBot from './bot/telegram.js';
+import { createOrder, getOrders, getOrderById, updateOrderStatus } from './routes/orders.js';
+import { getProducts, getFeaturedProducts, getProductById } from './routes/products.js';
+import { createPaymentQR, handlePaymentWebhook } from './routes/payments.js';
 
 const app = express();
+const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -38,159 +43,93 @@ const telegram = new TelegramBot(
   process.env.TELEGRAM_CHAT_ID
 );
 
-// Routes
+// Share instances via app locals
+app.locals.prisma = prisma;
+app.locals.shopee = shopee;
+app.locals.sepay = sepay;
+app.locals.telegram = telegram;
+
+// Health Check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV
+  });
 });
 
-// Shopee Products
-app.get('/api/products/trending', async (req, res) => {
-  try {
-    const { keyword = 'phụ kiện điện thoại', limit = 20 } = req.query;
-    const products = await shopee.searchProducts(keyword, limit);
-    res.json(products);
-  } catch (error) {
-    console.error('Error fetching products:', error.message);
-    res.status(500).json({ error: 'Failed to fetch products' });
-  }
-});
+// Products Routes
+app.get('/api/products', getProducts);
+app.get('/api/products/featured', getFeaturedProducts);
+app.get('/api/products/:id', getProductById);
 
-app.get('/api/products/:productId', async (req, res) => {
-  try {
-    const product = await shopee.getProductDetail(req.params.productId);
-    res.json(product);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch product details' });
-  }
-});
+// Orders Routes
+app.post('/api/orders', createOrder);
+app.get('/api/orders', getOrders);
+app.get('/api/orders/:id', getOrderById);
+app.patch('/api/orders/:id/status', updateOrderStatus);
 
-app.get('/api/categories', async (req, res) => {
-  try {
-    const categories = await shopee.getTrendingCategories();
-    res.json(categories);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch categories' });
-  }
-});
+// Payments Routes
+app.post('/api/payments/qr', createPaymentQR);
+app.post('/api/payments/webhook', handlePaymentWebhook);
 
-// Orders
-app.post('/api/orders', async (req, res) => {
-  try {
-    const { customerName, phone, address, productName, quantity, amount } = req.body;
-
-    // Validate
-    if (!customerName || !phone || !address || !productName || !quantity || !amount) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    const orderId = `ORD-${Date.now()}`;
-    const orderData = {
-      orderId,
-      customerName,
-      phone,
-      address,
-      productName,
-      quantity,
-      amount,
-      status: 'pending_payment',
-      createdAt: new Date(),
-    };
-
-    // Send notification
-    await telegram.notifyOrderPlaced(orderData);
-
-    res.status(201).json({ orderId, status: 'created' });
-  } catch (error) {
-    console.error('Error creating order:', error.message);
-    res.status(500).json({ error: 'Failed to create order' });
-  }
-});
-
-// Payments
-app.post('/api/payments/create-qr', async (req, res) => {
-  try {
-    const { orderId, amount, description } = req.body;
-
-    if (!orderId || !amount) {
-      return res.status(400).json({ error: 'Missing orderId or amount' });
-    }
-
-    const qrCode = await sepay.createQRCode({
-      orderId,
-      amount,
-      description,
-    });
-
-    res.json(qrCode);
-  } catch (error) {
-    console.error('Error creating payment QR:', error.message);
-    res.status(500).json({ error: 'Failed to create payment QR' });
-  }
-});
-
-// Payment Webhook (SePay callback)
-app.post('/api/payments/webhook', async (req, res) => {
-  try {
-    const webhookData = req.body;
-
-    // Verify signature
-    if (!sepay.verifyPaymentSignature(webhookData)) {
-      console.warn('Invalid payment signature');
-      return res.status(401).json({ error: 'Invalid signature' });
-    }
-
-    const { orderId, amount, status, transactionId } = webhookData;
-
-    if (status === 'success') {
-      // Update order status in database
-      console.log(`Payment received for order ${orderId}: ₫${amount}`);
-
-      // Send notification
-      await telegram.notifyPaymentReceived({
-        orderId,
-        customerName: 'Customer',
-        amount,
-      });
-
-      // TODO: Update DB, trigger fulfillment
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Webhook error:', error.message);
-    res.status(500).json({ error: 'Webhook processing failed' });
-  }
-});
-
-// Admin Dashboard
+// Admin Stats
 app.get('/api/admin/stats', async (req, res) => {
   try {
-    // TODO: Query database for stats
-    const stats = {
-      totalOrders: 0,
-      totalRevenue: 0,
-      paidOrders: 0,
-      pendingOrders: 0,
-      shippedOrders: 0,
-      topProduct: 'N/A',
-    };
-    res.json(stats);
+    const [totalOrders, paidOrders, shippedOrders] = await Promise.all([
+      prisma.order.count(),
+      prisma.order.count({ where: { paymentStatus: 'PAID' } }),
+      prisma.order.count({ where: { status: 'SHIPPED' } }),
+    ]);
+
+    const orders = await prisma.order.findMany({
+      select: { total: true },
+      where: { paymentStatus: 'PAID' }
+    });
+    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+
+    res.json({
+      totalOrders,
+      totalRevenue,
+      paidOrders,
+      pendingOrders: totalOrders - paidOrders,
+      shippedOrders,
+      timestamp: new Date(),
+    });
   } catch (error) {
+    console.error('Stats error:', error.message);
     res.status(500).json({ error: 'Failed to fetch stats' });
   }
 });
 
-// Error handling
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  console.error('Error:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Shutting down gracefully...');
+  await prisma.$disconnect();
+  process.exit(0);
 });
 
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Kinh Doanh Shopee Backend running on port ${PORT}`);
-  console.log(`📍 API: ${process.env.API_URL}/api`);
-  console.log(`💾 Database: ${process.env.DATABASE_URL?.split('@')[1] || 'Not configured'}`);
+  console.log(`📍 API: ${process.env.API_URL || `http://localhost:${PORT}`}/api`);
+  console.log(`💾 Database: Connected`);
+  console.log(`🔗 Frontend: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+  console.log(`📱 Node: ${process.version}`);
 });
 
-module.exports = app;
+export default app;

@@ -1,0 +1,178 @@
+// Kinh Doanh Shopee - Database Schema
+// PostgreSQL + Prisma ORM
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Products from Shopee
+model Product {
+  id                String      @id @default(cuid())
+  shopeeId          Int         @unique
+  name              String
+  description       String?     @db.Text
+  price             Int         // VND
+  originalPrice     Int?        // Before discount
+  discountPercent   Int?
+  image             String
+  images            String[]    // Gallery
+  rating            Float
+  ratingCount       Int
+  soldCount         Int
+  stock             Int
+  shopId            Int
+  shopName          String
+  sellerLocation    String?
+  category          String
+  featured          Boolean     @default(false)
+  active            Boolean     @default(true)
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  orderItems        OrderItem[]
+
+  @@index([featured])
+  @@index([active])
+  @@index([category])
+}
+
+// Customers
+model Customer {
+  id                String      @id @default(cuid())
+  name              String
+  email             String?     @unique
+  phone             String      @unique
+  address           String
+  ward              String?
+  district          String?
+  city              String?
+  telegramId        String?     @unique
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  orders            Order[]
+
+  @@index([phone])
+}
+
+// Orders
+model Order {
+  id                String      @id @default(cuid())
+  orderNumber       String      @unique
+  customerId        String
+  customer          Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  status            OrderStatus @default(PENDING_PAYMENT)
+  paymentStatus     PaymentStatus @default(PENDING)
+
+  subtotal          Int         // VND
+  shippingFee       Int?
+  total             Int
+
+  paymentMethod     String      @default("vietqr")
+  paymentQRUrl      String?
+  transactionId     String?
+
+  trackingNumber    String?
+  trackingUrl       String?
+
+  notes             String?     @db.Text
+  adminNotes        String?     @db.Text
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  paidAt            DateTime?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+
+  // Relations
+  items             OrderItem[]
+  payments          Payment[]
+
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id                String      @id @default(cuid())
+  orderId           String
+  order             Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId         String
+  product           Product     @relation(fields: [productId], references: [id])
+
+  quantity          Int
+  unitPrice         Int         // VND at time of order
+  total             Int
+
+  @@unique([orderId, productId])
+}
+
+// Payments (SePay)
+model Payment {
+  id                String      @id @default(cuid())
+  orderId           String
+  order             Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  amount            Int         // VND
+  status            PaymentStatus @default(PENDING)
+
+  sePayTransId      String?     @unique
+  bankTransId       String?
+  qrCode            String?
+
+  paidAt            DateTime?
+  expireAt          DateTime?
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+// Admin notifications log
+model NotificationLog {
+  id                String      @id @default(cuid())
+  orderId           String?
+  type              String      // "order_placed", "payment_received", "shipment_sent"
+  channel           String      // "telegram", "email", "sms"
+  status            String      // "sent", "failed", "pending"
+  message           String?     @db.Text
+  response          String?     @db.Text
+
+  createdAt         DateTime    @default(now())
+
+  @@index([orderId])
+  @@index([type])
+}
+
+// Enums
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+  REFUNDED
+}
