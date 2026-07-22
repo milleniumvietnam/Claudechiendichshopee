@@ -1,0 +1,39 @@
+# Environment
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.coverage/
+*.lcov
+
+# Logs
+logs/
+*.log
+
+# Temporary
+tmp/
+temp/
+*.bak
