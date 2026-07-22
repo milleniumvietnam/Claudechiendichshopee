@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: kdshopee-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        value: kdshopee_secret_2026_milleniumvn_x9f3k2
+      - key: FRONTEND_URL
+        value: https://claudechiendichshopee.vercel.app
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kdshopee-db
+          property: connectionString
+
+databases:
+  - name: kdshopee-db
+    plan: free
+    databaseName: kinh_doanh_shopee
+    user: kdshopee
