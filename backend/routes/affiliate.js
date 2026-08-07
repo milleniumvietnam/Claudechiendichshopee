@@ -27,14 +27,32 @@ export async function goToAffiliate(req, res) {
       return res.redirect(302, fallback)
     }
 
-    // Build the final destination. If AFFILIATE_DEEP_LINK_ID is set (AccessTrade campaign
-    // approved), wrap the Shopee URL in the affiliate deep-link so clicks earn commission.
-    // If NOT set, go straight to Shopee — so links never 404 while approval is pending.
+    // Build the final destination in two steps.
+    //
+    // Step 1 — device-aware Shopee URL. Most Vietnamese shoppers are logged into
+    // the Shopee APP, not the mobile-web site, so a plain shopee.vn link lands
+    // them on a logged-out browser page. Shopee's own /universal-link/ path
+    // opens the app when installed; deep_and_web=1 falls back to mobile web
+    // when it isn't. Desktop keeps the plain product URL.
     let destination = product.affiliateUrl
+    const ua = req.get('user-agent') || ''
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua)
+    const productMatch = product.affiliateUrl.match(
+      /^https?:\/\/(?:www\.)?shopee\.vn\/product\/(\d+)\/(\d+)/
+    )
+    if (isMobile && productMatch) {
+      const [, shopId, itemId] = productMatch
+      destination = `https://shopee.vn/universal-link/product/${shopId}/${itemId}?deep_and_web=1`
+    }
+
+    // Step 2 — commission wrap. If AFFILIATE_DEEP_LINK_ID is set (AccessTrade
+    // campaign approved), wrap whatever Shopee URL we chose in the affiliate
+    // deep-link so the click earns commission. If NOT set, go straight to
+    // Shopee — links must never 404 while approval is pending.
     const deepId = process.env.AFFILIATE_DEEP_LINK_ID
-    const isDirectShopee = /^https?:\/\/(www\.)?shopee\.vn\//.test(product.affiliateUrl)
+    const isDirectShopee = /^https?:\/\/(www\.)?shopee\.vn\//.test(destination)
     if (deepId && isDirectShopee) {
-      destination = `https://go.isclix.com/deep_link/${deepId}/?url=${encodeURIComponent(product.affiliateUrl)}&sub1=${product.shopeeId}&sub4=oneatweb`
+      destination = `https://go.isclix.com/deep_link/${deepId}/?url=${encodeURIComponent(destination)}&sub1=${product.shopeeId}&sub4=oneatweb`
     }
 
     // Fire-and-forget analytics (don't block the redirect on DB write)
