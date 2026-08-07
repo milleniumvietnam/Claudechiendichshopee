@@ -49,8 +49,16 @@ function discountPct(price, orig) {
 async function main() {
   console.log('🌱 Importing real Shopee products…')
   let n = 0
+  // AccessTrade deep-link (publisher AT2247335). Wrapping each Shopee product URL
+  // in this makes every "Mua trên Shopee" click an affiliate-tracked link that
+  // earns commission once the Shopee Smartlink campaign is approved.
+  const AT_DEEP_LINK_ID = '7041276717188154130'
+  const affiliate = (shopId, itemId) => {
+    const shopeeUrl = `https://shopee.vn/product/${shopId}/${itemId}`
+    return `https://go.isclix.com/deep_link/${AT_DEEP_LINK_ID}/?url=${encodeURIComponent(shopeeUrl)}&sub1=${itemId}&sub4=oneatweb`
+  }
   for (const [itemId, shopId, name, price, orig, rating, image, category, featured] of RAW) {
-    const affiliateUrl = `https://shopee.vn/product/${shopId}/${itemId}`
+    const affiliateUrl = affiliate(shopId, itemId)
     const data = {
       shopeeId: itemId,
       name,
