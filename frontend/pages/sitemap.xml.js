@@ -1,5 +1,5 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL
-const SITE = 'https://claudechiendichshopee.vercel.app'
+const SITE = 'https://deal.milleniumvietnam.com'
 
 export async function getServerSideProps({ res }) {
   let products = []

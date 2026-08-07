@@ -33,7 +33,7 @@ export default function Home() {
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Kinh Doanh Shopee — Phụ kiện công nghệ tuyển chọn" />
         <meta property="og:description" content="Tai nghe, sạc dự phòng, sạc nhanh bán chạy nhất Shopee — tuyển chọn kỹ, giá tốt." />
-        <meta property="og:url" content="https://claudechiendichshopee.vercel.app" />
+        <meta property="og:url" content="https://deal.milleniumvietnam.com" />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
 

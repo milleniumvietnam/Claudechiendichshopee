@@ -1,6 +1,6 @@
 # 📣 Bộ Nội Dung MXH — Kéo Traffic Bán Affiliate
 
-> Mục tiêu: đưa người xem TikTok/Facebook/Zalo → về web **claudechiendichshopee.vercel.app** → bấm "Mua trên Shopee" → bạn nhận hoa hồng.
+> Mục tiêu: đưa người xem TikTok/Facebook/Zalo → về web **deal.milleniumvietnam.com** → bấm "Mua trên Shopee" → bạn nhận hoa hồng.
 
 **Quy tắc vàng:** Video/bài đăng KHÔNG gắn link Shopee trực tiếp (dễ bị chặn, mất hoa hồng). Luôn dẫn về **web của bạn** (link ở bio / bình luận đầu tiên), web mới chuyển tiếp qua link affiliate.
 
@@ -59,19 +59,19 @@
 > 🎧 Tai nghe Bluetooth từ 15k
 > 🔋 Sạc dự phòng 50.000mAh
 > 🌌 Đèn galaxy decor phòng 59k
-> Mình gom hết vào 1 web cho dễ xem, ai cần thì bấm 👉 claudechiendichshopee.vercel.app
+> Mình gom hết vào 1 web cho dễ xem, ai cần thì bấm 👉 deal.milleniumvietnam.com
 
 **2. Dạng "mách nhỏ"**
-> Mách nhỏ chỗ mua phụ kiện công nghệ giá mềm mà mình hay lượn 😎 Toàn hàng bán chạy trên Shopee, mình chọn sẵn cho đỡ mất công lọc. Xem tại: claudechiendichshopee.vercel.app
+> Mách nhỏ chỗ mua phụ kiện công nghệ giá mềm mà mình hay lượn 😎 Toàn hàng bán chạy trên Shopee, mình chọn sẵn cho đỡ mất công lọc. Xem tại: deal.milleniumvietnam.com
 
 **3. Dạng câu hỏi tương tác**
 > Điện thoại các bạn hay hết pin giữa đường không? 🔋 Mình vừa kiếm được cục sạc dự phòng 50.000mAh sạc được 2 máy cùng lúc. Ai cần link để mình gửi (hoặc xem ở web bio) nhé!
 
 **4. Dạng decor phòng (nhắm nữ/Gen Z)**
-> Góc phòng "chữa lành" bản giá sinh viên đây 🌙✨ Đèn galaxy cực quang chỉ 59k, điều khiển từ xa. Xem thêm mấy món decor + công nghệ ở đây: claudechiendichshopee.vercel.app
+> Góc phòng "chữa lành" bản giá sinh viên đây 🌙✨ Đèn galaxy cực quang chỉ 59k, điều khiển từ xa. Xem thêm mấy món decor + công nghệ ở đây: deal.milleniumvietnam.com
 
 **5. Dạng gaming (nhắm nam/game thủ)**
-> Setup gaming ngon mà không cháy túi 🎮 Chuột không dây RGB có dock sạc, tai nghe gaming, đèn LED ARGB… gom hết ở đây: claudechiendichshopee.vercel.app
+> Setup gaming ngon mà không cháy túi 🎮 Chuột không dây RGB có dock sạc, tai nghe gaming, đèn LED ARGB… gom hết ở đây: deal.milleniumvietnam.com
 
 ---
 
@@ -88,7 +88,7 @@
 | CN | Video tổng hợp "5 món đáng mua" | — |
 
 **Mẹo tăng chuyển đổi:**
-1. **Link ở bio**: đặt `claudechiendichshopee.vercel.app` ở bio TikTok/IG. Video chỉ nói "link ở bio".
+1. **Link ở bio**: đặt `deal.milleniumvietnam.com` ở bio TikTok/IG. Video chỉ nói "link ở bio".
 2. **Bình luận đầu tiên**: tự ghim 1 bình luận có link web (Facebook thích link ở comment hơn trong bài).
 3. **3 giây đầu quyết định**: hook phải sốc/tò mò ngay giây đầu.
 4. **Chữ trên màn hình**: luôn có, vì nhiều người xem không bật tiếng.
@@ -99,7 +99,7 @@
 ---
 
 ## 🔗 Link cần dùng
-- **Web chính:** https://claudechiendichshopee.vercel.app
+- **Web chính:** https://deal.milleniumvietnam.com
 - **Trang sản phẩm (chia sẻ được, có nút Facebook/Zalo/Copy):** mỗi sản phẩm có link riêng dạng `.../products/<id>` — mở sản phẩm rồi bấm **Chia sẻ**.
 - **Đổi/ thêm link affiliate:** trang `/admin` (đăng nhập bằng ADMIN_KEY).
 

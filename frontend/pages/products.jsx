@@ -49,7 +49,7 @@ export default function Products() {
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Tất cả sản phẩm — Kinh Doanh Shopee" />
         <meta property="og:description" content="Phụ kiện công nghệ bán chạy nhất Shopee, tuyển chọn kỹ, giá tốt." />
-        <meta property="og:url" content="https://claudechiendichshopee.vercel.app/products" />
+        <meta property="og:url" content="https://deal.milleniumvietnam.com/products" />
       </Head>
 
       {/* Navigation */}

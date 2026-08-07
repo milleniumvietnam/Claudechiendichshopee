@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
-const SITE_URL = 'https://claudechiendichshopee.vercel.app'
+const SITE_URL = 'https://deal.milleniumvietnam.com'
 
 export async function getServerSideProps({ params }) {
   try {
