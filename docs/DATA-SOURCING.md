@@ -57,6 +57,23 @@ URL ảnh đầy đủ: `https://down-vn.img.susercontent.com/file/{mã băm}`
 
 ---
 
+## 3b. Hạn mức — đọc trước khi chạy
+
+Shopee cho khoảng **40–50 lần gọi mỗi IP** rồi chặn. Khi bị chặn:
+
+- Mọi lần gọi trả `error: 90309999` với HTTP **200** (không phải 429)
+- Điều hướng trang cũng bị đá sang `/verify/traffic/error`
+- **Xoá sạch cookie không gỡ được** — đã thử xoá cả 26 cookie, vẫn chặn ⇒ chặn theo **IP**, không theo phiên
+- Chờ 12 phút chưa đủ. Nên tính bằng giờ, hoặc đổi mạng (4G điện thoại)
+
+> ⚠️ `90309999` **không** có nghĩa "sản phẩm đã bị gỡ". Nó chỉ có nghĩa "bạn đang bị chặn".
+> Lần đầu đã hiểu nhầm mã này và loại oan 2 sản phẩm khỏi kho.
+> **Khi gặp mã này, dừng lại và chờ — đừng kết luận gì về sản phẩm.**
+
+**Cách chạy an toàn:** mỗi lượt tối đa ~30 sản phẩm, giãn 900–1100 ms, và ghi kết quả vào `localStorage` ngay sau mỗi lần gọi (`localStorage.setItem('__gallery__', ...)`). Trang bị chuyển hướng giữa chừng sẽ xoá sạch biến `window`, nhưng `localStorage` thì còn — nhờ vậy chạy tiếp được từ chỗ dở.
+
+---
+
 ## 4. Hai cái bẫy đã sập một lần
 
 **Bẫy 1 — giá bằng 0.** Hàng nhiều phiên bản không có `single_value`; nó trả `-1` và giá nằm ở `range_min` / `range_max`. Chia cho 100000 rồi làm tròn sẽ ra `0`. **9 trong 40 món** dính lỗi này.

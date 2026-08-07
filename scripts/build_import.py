@@ -8,8 +8,8 @@ and image. Nothing here is transcribed by hand without a byte-level checksum.
 """
 import json
 
-BASE = "/private/tmp/claude-501/"
-OUT = "/Users/yakuzabinair/Desktop/Kinh Doanh Shopee/backend/prisma/import-shopee.js"
+BASE = __file__.rsplit("/", 1)[0] + "/"
+OUT = __file__.rsplit("/", 1)[0] + "/../backend/prisma/import-shopee.js"
 IMG_PREFIX = "https://down-vn.img.susercontent.com/file/"
 
 # Two listings Shopee no longer serves (error 90309999) — dropped, not guessed at.
@@ -44,6 +44,16 @@ for line in open(BASE + "images.tsv", encoding="utf-8"):
     f = line.rstrip("\n").split("\t")
     images[f[0]] = f[1] if len(f) > 1 else ""
 
+# Gallery frames (optional): itemId <TAB> hash|hash|hash...
+# Absent file just means every product falls back to its single main image.
+import os
+galleries = {}
+if os.path.exists(BASE + "galleries.tsv"):
+    for line in open(BASE + "galleries.tsv", encoding="utf-8"):
+        f = line.rstrip("\n").split("\t")
+        if len(f) > 1 and f[1]:
+            galleries[f[0]] = [h for h in f[1].split("|") if h]
+
 # Multi-variant items: Shopee returns a range, not a single price.
 for line in open(BASE + "ranges.tsv", encoding="utf-8"):
     f = line.rstrip("\n").split("\t")
@@ -69,10 +79,12 @@ for c in kept:
     iid = c["itemId"]
     shop_id = pairs[iid]["shopId"]
     img = IMG_PREFIX + images[iid] if images.get(iid) else ""
+    gal = "[" + ", ".join(js(IMG_PREFIX + h) for h in galleries.get(iid, [])) + "]"
     rows.append(
         "  { itemId: %s, shopId: %s, name: %s,\n"
         "    price: %d, priceMax: %s, orig: %d, discount: %d,\n"
         "    rating: %.2f, reviews: %d, star5: %d, image: %s,\n"
+        "    images: %s,\n"
         "    shop: %s, shopLoc: %s, shopRating: %.2f, shopFollowers: %d,\n"
         "    shopVerified: %s, shopOfficial: %s, shopResponse: %d,\n"
         "    category: %s, featured: %s },"
@@ -80,7 +92,7 @@ for c in kept:
             js(iid), js(shop_id), js(c["title"]),
             c["price"], (str(c["priceMax"]) if c.get("priceMax") else "null"),
             c["orig"], c["discount"],
-            c["rating"], c["reviews"], c["star5"], js(img),
+            c["rating"], c["reviews"], c["star5"], js(img), gal,
             js(c["shopName"]), js(c["shopLoc"]), c["shopRating"], c["shopFollowers"],
             "true" if c["shopVerified"] else "false",
             "true" if c["shopOfficial"] else "false", c["shopResponse"],
@@ -124,7 +136,7 @@ async function main() {
       originalPrice: p.orig,
       discountPercent: p.discount,
       image: p.image,
-      images: [],
+      images: p.images,
       rating: p.rating,
       ratingCount: p.reviews,
       reviewStar5: p.star5,
@@ -172,6 +184,7 @@ open(OUT, "w", encoding="utf-8").write(header + body + footer)
 
 from collections import Counter
 print("kept", len(kept), "products")
+print("có gallery:", sum(1 for c in kept if galleries.get(c["itemId"])), "/", len(kept))
 print(Counter(c["category"] for c in kept))
 print("price 0:", [c["itemId"] for c in kept if not c["price"]])
 print("no image:", [c["itemId"] for c in kept if not images.get(c["itemId"])])
