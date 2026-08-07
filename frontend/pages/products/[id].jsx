@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import ProductCard from '../../components/ProductCard'
+import Gallery from '../../components/Gallery'
 import { price, priceLabel, num, catLabel, reviews, shopBadge, API_URL, SITE_URL } from '../../lib/format'
 
 export async function getServerSideProps({ params }) {
@@ -66,18 +67,18 @@ export default function ProductDetail({ product: p, related }) {
       </div>
 
       <article className="max-w-[1180px] mx-auto px-5 pt-6 pb-4 grid lg:grid-cols-2 gap-8 lg:gap-14">
-        <div className="relative rounded-card overflow-hidden bg-paper-200 border border-paper-300 aspect-square">
-          {p.image ? (
-            <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-          ) : (
-            <span className="absolute inset-0 grid place-items-center spec">KHÔNG CÓ ẢNH</span>
-          )}
-          {off && (
-            <span className="absolute top-3.5 left-3.5 spec-chip bg-ember text-white font-bold text-[12px] px-2.5 py-1.5">
-              −{p.discountPercent}%
-            </span>
-          )}
-        </div>
+        <Gallery
+          images={p.images}
+          main={p.image}
+          alt={p.name}
+          badge={
+            off && (
+              <span className="absolute top-3.5 left-3.5 spec-chip bg-ember text-white font-bold text-[12px] px-2.5 py-1.5">
+                −{p.discountPercent}%
+              </span>
+            )
+          }
+        />
 
         <div className="lg:py-2">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-3">
