@@ -12,8 +12,10 @@ BASE = __file__.rsplit("/", 1)[0] + "/"
 OUT = __file__.rsplit("/", 1)[0] + "/../backend/prisma/import-shopee.js"
 IMG_PREFIX = "https://down-vn.img.susercontent.com/file/"
 
-# Two listings Shopee no longer serves (error 90309999) — dropped, not guessed at.
-DEAD = {"24910953759", "29994060777"}
+# Listings Shopee no longer serves. Empty since 08/08/2026: the two items dropped
+# earlier turned out to be alive — error 90309999 means "rate-limited", NOT
+# "listing removed" (see docs/DATA-SOURCING.md). Both were re-verified and revived.
+DEAD = set()
 
 # Near-duplicates: same product, same or weaker listing. The storefront's whole
 # claim is that the catalogue is filtered with care, so showing the same item
