@@ -87,15 +87,27 @@ Hero cũng vì thế mà không mở bằng “số to + nhãn nhỏ + gradient�
 
 ---
 
-## 7. Sửa một lỗi trung thực (quan trọng nhất)
+## 7. Sửa những lỗi trung thực (quan trọng nhất)
 
-Kiểm tra dữ liệu thật phát hiện: `soldCount`, `ratingCount`, `stock` **đều bằng 0** cho cả 40 sản phẩm.
-
-Bản cũ hiển thị **“0 sold”** trên mọi thẻ sản phẩm.
+**Vòng 1 — bỏ con số không có.** Kiểm tra dữ liệu thật phát hiện `soldCount`, `ratingCount`, `stock` **đều bằng 0** cho cả 40 sản phẩm, mà bản cũ vẫn in **“0 sold”** lên mọi thẻ.
 
 > Một trang bán hàng nói “0 đã bán” thì phá hủy tin tưởng nhanh hơn bất kỳ lỗi thẩm mỹ nào.
 
-Thiết kế mới **loại bỏ hoàn toàn** các trường này. Chỉ trưng ra thứ có thật: **đánh giá, % giảm, giá, giá gốc, danh mục**. Đã kiểm chứng trên bản live: 0 kết quả khớp `"0 sold"` ở cả ba trang.
+**Vòng 2 — kho hàng nói sai tên.** Bản quét Apify ban đầu bị **lệch cột `name` xuống một dòng**: mỗi sản phẩm mang tên và ảnh của sản phẩm kế tiếp. Khách bấm vào một cái tên rồi sang Shopee thấy món khác — lỗi tin cậy nặng nhất có thể có với trang affiliate.
+
+Đã dựng lại toàn bộ kho từ **API sản phẩm của chính Shopee** (`api/v4/pdp/get_pc`), đọc từng mã hàng một, đối chiếu từng byte. Kho 40 → **36**: bỏ 2 listing Shopee đã gỡ và 2 listing trùng lặp (trang tự nhận là “lọc kỹ” thì không thể bày trùng).
+
+Ba câu khác cũng đang nói sai, đã sửa:
+
+| Chỗ | Nói sai | Sự thật |
+|---|---|---|
+| Khối thông số hero | “xếp theo lượt bán” | Shopee không còn công bố lượt bán → xếp theo **lượt đánh giá** |
+| API danh sách | sắp theo `soldCount` | Trường này luôn = 0 nên thứ tự **ngẫu nhiên** → chuyển sang `ratingCount` |
+| Trang chi tiết | “Người bán: Shop trên Shopee” | Nay hiện **tên shop thật** |
+
+**Vòng 3 — thay con số đã mất bằng con số có thật.** Lượt bán không lấy được, nhưng **số đánh giá** thì có: **65.673 đánh giá** trên toàn kho, kèm đánh giá shop, người theo dõi, tỷ lệ phản hồi, và cờ *Chính hãng / Đã xác minh* của chính Shopee.
+
+Đây là tín hiệu **mạnh hơn** lượt bán, vì nó kèm sẵn nguồn kiểm chứng: khách bấm sang Shopee là thấy đúng con số đó.
 
 ---
 
@@ -139,7 +151,8 @@ Thiết kế mới **loại bỏ hoàn toàn** các trường này. Chỉ trưng
 
 Trung thực về giới hạn hiện tại:
 
-1. **Chưa có ảnh chi tiết** — mỗi sản phẩm chỉ 1 ảnh từ Shopee. Có gallery sẽ tăng chuyển đổi.
+1. **Chưa có ảnh chi tiết** — mỗi sản phẩm chỉ 1 ảnh. API của Shopee **có sẵn 6–9 ảnh mỗi món** và đã lấy thử được; chỉ còn chờ thêm cột `images` vào giao diện. Đây là việc đáng làm tiếp theo.
 2. **Chưa có mô tả** — trường `description` trống, nên trang chi tiết dựa vào tên sản phẩm.
-3. **Chưa có đánh giá thật của khách** — khi có traffic, thu thập review sẽ mạnh hơn mọi thiết kế.
-4. **Số lượt bán** — nếu scrape lại được `soldCount` thật, đó là tín hiệu tin tưởng mạnh nhất còn thiếu.
+3. **Chưa có nội dung đánh giá** — mới có *số lượng* đánh giá, chưa có *lời* đánh giá. API có trả nội dung review.
+4. **Số lượt bán: không lấy được** — Shopee đã ngừng công bố (`historical_sold = null` ở cả 40 món kiểm thử). Không phải thiếu sót của bản quét; đừng tốn công tìm lại.
+5. **Giá và tồn kho sẽ cũ dần** — kho hàng là ảnh chụp tại 07/08/2026. Nên chạy lại định kỳ; cách lấy dữ liệu đã ghi ở `docs/DATA-SOURCING.md`.
