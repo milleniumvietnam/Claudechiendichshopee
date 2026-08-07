@@ -39,6 +39,26 @@ const RAW = [
   ['48200823921','1655698552','Bộ sạc siêu nhanh Xiaomi MI 120W Turbo + cáp USB-C 6A (MI 11-15/Redmi)',41782,107951,4.6,'https://down-vn.img.susercontent.com/file/sg-11134253-821f3-mh1ou6ic03yh8a','sạc nhanh',false],
   ['41450755372','1454455021','Củ sạc nhanh GaN 200W, 4 cổng PD Type-C, sạc đa thiết bị',35000,88718,5.0,'https://down-vn.img.susercontent.com/file/sg-11134201-7rfib-m9pu3gndmyf445','sạc nhanh',false],
   ['28512157284','1324308924','Sạc nhanh OPPO 65W SUPER VOOC, củ + dây USB to Type-C chính hãng',73000,120000,4.8,'https://down-vn.img.susercontent.com/file/sg-11134253-823ra-moic575vx62zcc','sạc nhanh',false],
+
+  // ===== Đèn LED trang trí (đèn led) =====
+  ['43258316432','1326834591','Đèn dây LED ARGB 16 triệu màu 5M/10M, điều khiển điện thoại, nháy theo nhạc, decor phòng',75479,96128,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mc45awlgnvca55','đèn led',true],
+  ['22457174137','1003521646','Đèn Galaxy Cực Quang USB LED chiếu bầu trời, decor phòng ngủ, điều khiển từ xa',199999,249999,4.5,'https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-lmlnaub8n9b355','đèn led',true],
+  ['25473508880','1053563596','Đèn Cực Quang chiếu bầu trời Galaxy UStyle Q6S, decor phòng ngủ, điều khiển từ xa',59000,100000,4.7,'https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-lza8wcu330p9f4','đèn led',true],
+  ['28179965010','1155427994','Goldstar đèn ngủ để bàn LED 3D chiếu sóng nước, 16 màu RGB',43500,50000,4.7,'https://down-vn.img.susercontent.com/file/vn-11134207-7ra0g-m7hbqpg9uzmg7b','đèn led',false],
+  ['25944454662','1133531707','Dây LED RGB dải USB 16 triệu màu, điều khiển remote, trang trí decor phòng',99000,139000,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mjdt5nj5xpfl4e','đèn led',false],
+  ['40559417524','1297127080','Đèn Galaxy cực quang chiếu trần 3D dải ngân hà, cảm biến nhạc, decor phòng',106820,196000,4.7,'https://down-vn.img.susercontent.com/file/cn-11134207-820l4-mi9nfzfg3eh268','đèn led',false],
+  ['41203188085','50626807','Đèn NEON FLEX 10M 5V ARGB, dây neon chạy đuổi, decor tường phòng ngủ/làm việc',67520,120000,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mal0flsd3z4cc7','đèn led',false],
+  ['40608279896','1326834591','Dây đèn LED sợi tóc Neon 220V có phích cắm, chống nước, dẻo, viền trang trí',75479,96128,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mc3j3ctyj2xaac','đèn led',false],
+
+  // ===== Chuột gaming không dây (chuột gaming) =====
+  ['15509326183','390877573','Chuột Silent Gaming Atas F30 không dây Bluetooth 3 MODE, pin 500mAh 50h, có app Macro',64000,90000,4.9,'https://down-vn.img.susercontent.com/file/0c5201ea2a48a683de34f71e0191121b','chuột gaming',true],
+  ['26609027692','131085332','Chuột Gaming LEAVEN X3 Chip Pro không dây, có dock sạc, 3 mức DPI, LED RGB',165170,300000,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-lzponjmp4kel18','chuột gaming',true],
+  ['44375866256','1588249983','Chuột Gaming không dây Attack Shark X11 dock sạc, 3 chế độ kết nối, tặng griptape',288000,400000,4.5,'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mq7aw6ta5blt78','chuột gaming',true],
+  ['22010951491','392454501','Chuột không dây gaming TEKKIN INPHIC A9 PRO Bluetooth silent, pin sạc, 6 nút, LED RGB',184000,239000,4.9,'https://down-vn.img.susercontent.com/file/sg-11134201-22120-lysspcsim3kv7c','chuột gaming',false],
+  ['29994060777','184461269','Chuột Gaming không dây T28 có đèn LED, click không tiếng ồn, bảo hành 12 tháng',369000,458000,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-m59qc579etsn9b','chuột gaming',false],
+  ['14109335337','390877573','Chuột không dây Bluetooth 2-in-1 chế độ kép 2.4GHz, im lặng, chỉnh DPI 3 cấp',64000,90000,4.9,'https://down-vn.img.susercontent.com/file/4a709cda034249658832c498d210042f','chuột gaming',false],
+  ['53303675114','889908151','Chuột Bluetooth 5.0 không dây gaming sạc pin TEKKIN Inphic M6P cho game thủ',151250,362500,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mjgjf7fhn6yo8b','chuột gaming',false],
+  ['27421845442','178808689','Chuột Gaming không dây YINOIAO A7 LED tự động đổi màu, DPI 3600, cho máy tính',450000,null,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-m48rhdmf67ow42','chuột gaming',false],
 ]
 
 function discountPct(price, orig) {

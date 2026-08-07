@@ -27,9 +27,14 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Kinh Doanh Shopee - Curated Premium Accessories</title>
-        <meta name="description" content="Discover handpicked premium tech accessories and lifestyle products" />
+        <title>Kinh Doanh Shopee — Phụ kiện công nghệ tuyển chọn, giá tốt</title>
+        <meta name="description" content="Tuyển chọn tai nghe, sạc dự phòng, sạc nhanh & phụ kiện công nghệ bán chạy nhất Shopee. Giá tốt, hàng chính hãng, mua trực tiếp trên Shopee." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Kinh Doanh Shopee — Phụ kiện công nghệ tuyển chọn" />
+        <meta property="og:description" content="Tai nghe, sạc dự phòng, sạc nhanh bán chạy nhất Shopee — tuyển chọn kỹ, giá tốt." />
+        <meta property="og:url" content="https://claudechiendichshopee.vercel.app" />
+        <meta name="twitter:card" content="summary_large_image" />
       </Head>
 
       {/* Navigation */}

@@ -34,17 +34,22 @@ export default function Products() {
 
   const categories = [
     'phụ kiện điện thoại',
-    'smartwatch',
     'pin sạc dự phòng',
     'sạc nhanh',
-    'thông minh'
+    'đèn led',
+    'chuột gaming'
   ]
 
   return (
     <>
       <Head>
-        <title>Products - Kinh Doanh Shopee</title>
-        <meta name="description" content="Browse our collection of premium tech accessories" />
+        <title>Tất cả sản phẩm — Kinh Doanh Shopee</title>
+        <meta name="description" content="Bộ sưu tập phụ kiện công nghệ bán chạy nhất Shopee: tai nghe, sạc dự phòng, sạc nhanh, đèn LED, chuột gaming. Giá tốt, mua trực tiếp trên Shopee." />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Tất cả sản phẩm — Kinh Doanh Shopee" />
+        <meta property="og:description" content="Phụ kiện công nghệ bán chạy nhất Shopee, tuyển chọn kỹ, giá tốt." />
+        <meta property="og:url" content="https://claudechiendichshopee.vercel.app/products" />
       </Head>
 
       {/* Navigation */}
