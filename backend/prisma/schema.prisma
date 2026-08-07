@@ -32,15 +32,36 @@ model Product {
   featured          Boolean     @default(false)
   active            Boolean     @default(true)
 
+  // Affiliate
+  affiliateUrl      String?     // Shopee/TikTok affiliate deep-link. If set, product is affiliate (no self-checkout)
+  affiliateSource   String?     @default("shopee") // shopee | tiktok | lazada | tiki
+  commissionPct     Float?      // expected commission %, for revenue projection
+  clickCount        Int         @default(0)
+
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
   // Relations
   orderItems        OrderItem[]
+  clicks            AffiliateClick[]
 
   @@index([featured])
   @@index([active])
   @@index([category])
+}
+
+// Affiliate click tracking (your own analytics on redirects)
+model AffiliateClick {
+  id                String      @id @default(cuid())
+  productId         String
+  product           Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  source            String?     // referrer / utm_source
+  userAgent         String?
+  ipHash            String?     // hashed IP for rough unique-visitor counting
+  createdAt         DateTime    @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
 }
 
 // Customers

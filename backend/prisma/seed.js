@@ -27,9 +27,17 @@ async function main() {
         sellerLocation: 'Ho Chi Minh',
         category: 'phụ kiện điện thoại',
         featured: true,
-        active: true
+        active: true,
+        affiliateUrl: 'https://shopee.vn/search?keyword=tai%20nghe%20khong%20day',
+        affiliateSource: 'shopee',
+        commissionPct: 6
       },
-      update: { featured: true }
+      update: {
+        featured: true,
+        affiliateUrl: 'https://shopee.vn/search?keyword=tai%20nghe%20khong%20day',
+        affiliateSource: 'shopee',
+        commissionPct: 6
+      }
     }),
     prisma.product.upsert({
       where: { shopeeId: 1002 },
@@ -51,9 +59,17 @@ async function main() {
         sellerLocation: 'Ho Chi Minh',
         category: 'pin sạc dự phòng',
         featured: true,
-        active: true
+        active: true,
+        affiliateUrl: 'https://shopee.vn/search?keyword=pin%20sac%20du%20phong',
+        affiliateSource: 'shopee',
+        commissionPct: 5
       },
-      update: { featured: true }
+      update: {
+        featured: true,
+        affiliateUrl: 'https://shopee.vn/search?keyword=pin%20sac%20du%20phong',
+        affiliateSource: 'shopee',
+        commissionPct: 5
+      }
     }),
     prisma.product.upsert({
       where: { shopeeId: 1003 },
@@ -75,9 +91,17 @@ async function main() {
         sellerLocation: 'Da Nang',
         category: 'smartwatch',
         featured: true,
-        active: true
+        active: true,
+        affiliateUrl: 'https://shopee.vn/search?keyword=day%20dong%20ho%20thong%20minh',
+        affiliateSource: 'shopee',
+        commissionPct: 8
       },
-      update: { featured: true }
+      update: {
+        featured: true,
+        affiliateUrl: 'https://shopee.vn/search?keyword=day%20dong%20ho%20thong%20minh',
+        affiliateSource: 'shopee',
+        commissionPct: 8
+      }
     }),
     prisma.product.upsert({
       where: { shopeeId: 1004 },
@@ -99,9 +123,17 @@ async function main() {
         sellerLocation: 'Hanoi',
         category: 'sạc nhanh',
         featured: true,
-        active: true
+        active: true,
+        affiliateUrl: 'https://shopee.vn/search?keyword=sac%20nhanh%20usb%20c',
+        affiliateSource: 'shopee',
+        commissionPct: 5
       },
-      update: { featured: true }
+      update: {
+        featured: true,
+        affiliateUrl: 'https://shopee.vn/search?keyword=sac%20nhanh%20usb%20c',
+        affiliateSource: 'shopee',
+        commissionPct: 5
+      }
     })
   ])
 
