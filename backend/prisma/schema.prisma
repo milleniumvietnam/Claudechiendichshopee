@@ -16,18 +16,28 @@ model Product {
   shopeeId          String      @unique // Shopee item_id (11+ digits, stored as string)
   name              String
   description       String?     @db.Text
-  price             Int         // VND
+  price             Int         // VND. For multi-variant items this is the lowest variant price
+  priceMax          Int?        // Set only when the item has a price range (cheapest != dearest variant)
   originalPrice     Int?        // Before discount
   discountPercent   Int?
   image             String
   images            String[]    // Gallery
   rating            Float
-  ratingCount       Int
-  soldCount         Int
+  ratingCount       Int         // real review count from Shopee — the trust signal we actually have
+  reviewStar5       Int?        // how many of those are 5-star
+  soldCount         Int         // Shopee no longer discloses this; stays 0 and is never displayed
   stock             Int
   shopId            String
   shopName          String
   sellerLocation    String?
+
+  // Shop trust signals, straight from Shopee's own product API
+  shopRating        Float?
+  shopFollowers     Int?
+  shopVerified      Boolean     @default(false) // Shopee-verified seller
+  shopOfficial      Boolean     @default(false) // Shopee Mall / official store
+  shopResponseRate  Int?        // % of chats answered
+
   category          String
   featured          Boolean     @default(false)
   active            Boolean     @default(true)

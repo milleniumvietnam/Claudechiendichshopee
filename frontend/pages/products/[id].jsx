@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Nav from '../../components/Nav'
 import Footer from '../../components/Footer'
 import ProductCard from '../../components/ProductCard'
-import { price, catLabel, API_URL, SITE_URL } from '../../lib/format'
+import { price, priceLabel, num, catLabel, reviews, shopBadge, API_URL, SITE_URL } from '../../lib/format'
 
 export async function getServerSideProps({ params }) {
   try {
@@ -30,6 +30,7 @@ export default function ProductDetail({ product: p, related }) {
   const buyUrl = `${API_URL}/api/go/${p.id}`
   const off = p.discountPercent > 0 && p.originalPrice > p.price
   const saved = off ? p.originalPrice - p.price : 0
+  const badge = shopBadge(p)
 
   const copy = async () => {
     try {
@@ -79,8 +80,14 @@ export default function ProductDetail({ product: p, related }) {
         </div>
 
         <div className="lg:py-2">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="spec text-ink font-medium">★ {p.rating?.toFixed(1)}</span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-3">
+            <span className="spec text-ink font-medium whitespace-nowrap">★ {p.rating?.toFixed(1)}</span>
+            {p.ratingCount > 0 && (
+              <>
+                <span aria-hidden="true" className="text-slate-200">·</span>
+                <span className="spec whitespace-nowrap">{reviews(p.ratingCount)}</span>
+              </>
+            )}
             <span aria-hidden="true" className="text-slate-200">·</span>
             <span className="spec">{catLabel(p.category)}</span>
           </div>
@@ -88,11 +95,16 @@ export default function ProductDetail({ product: p, related }) {
           <h1 className="font-display text-display-md leading-[1.15] mb-6">{p.name}</h1>
 
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
-            <span className="font-mono font-bold text-[34px] tracking-[-0.03em]">{price(p.price)}</span>
+            <span className="font-mono font-bold text-[34px] tracking-[-0.03em]">{priceLabel(p)}</span>
             {off && (
               <span className="font-mono text-[16px] text-slate-400 line-through">{price(p.originalPrice)}</span>
             )}
           </div>
+          {p.priceMax > p.price && (
+            <p className="text-[13px] text-slate mb-1">
+              Giá thay đổi theo phiên bản, tới {price(p.priceMax)}
+            </p>
+          )}
           {off && (
             <p className="text-[14px] text-jade font-medium mb-7">Rẻ hơn {price(saved)} so với giá niêm yết</p>
           )}
@@ -113,10 +125,48 @@ export default function ProductDetail({ product: p, related }) {
             Mở Shopee ở tab mới · giá không đổi
           </p>
 
+          {/* Who is on the other end. Shopee's own record of this seller, not our
+              characterisation of them — the numbers are the argument. */}
+          {p.shopName && (
+            <div className="rounded-[12px] border border-paper-300 bg-white p-4 mb-4">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="min-w-0">
+                  <p className="spec mb-1.5">NGƯỜI BÁN</p>
+                  <p className="text-[15px] font-semibold leading-snug break-words">{p.shopName}</p>
+                </div>
+                {badge && (
+                  <span
+                    className={`spec-chip shrink-0 font-semibold ${
+                      badge.tone === 'official' ? 'bg-jade-100 text-jade' : 'bg-paper-200 text-slate'
+                    }`}
+                  >
+                    {badge.text}
+                  </span>
+                )}
+              </div>
+              <dl className="grid grid-cols-3 gap-3 border-t border-paper-300 pt-3">
+                {[
+                  ['ĐÁNH GIÁ SHOP', p.shopRating ? `${p.shopRating.toFixed(2)}★` : '—'],
+                  ['NGƯỜI THEO DÕI', p.shopFollowers != null ? num(p.shopFollowers) : '—'],
+                  ['TỶ LỆ PHẢN HỒI', p.shopResponseRate != null ? `${p.shopResponseRate}%` : '—'],
+                ].map(([k, v]) => (
+                  <div key={k}>
+                    <dt className="spec text-[10px] leading-tight mb-1">{k}</dt>
+                    <dd className="font-mono text-[14px] font-bold">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+              {p.sellerLocation && (
+                <p className="spec mt-3 pt-3 border-t border-paper-300 normal-case">
+                  Giao từ {p.sellerLocation}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* What actually happens next — removes the last hesitation. */}
           <dl className="rounded-[12px] border border-paper-300 bg-white divide-y divide-paper-300 mb-6">
             {[
-              ['Người bán', 'Shop trên Shopee'],
               ['Thanh toán & vận chuyển', 'Shopee xử lý'],
               ['Đổi trả', 'Theo chính sách Shopee'],
               ['Giá cuối cùng', 'Giá hiển thị trên Shopee'],
@@ -163,7 +213,7 @@ export default function ProductDetail({ product: p, related }) {
       <div className="lg:hidden sticky bottom-0 z-40 mt-14 bg-paper/95 backdrop-blur-md border-t border-paper-300 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center gap-3">
           <div className="min-w-0">
-            <p className="font-mono font-bold text-[17px] leading-none">{price(p.price)}</p>
+            <p className="font-mono font-bold text-[17px] leading-none whitespace-nowrap">{priceLabel(p)}</p>
             {off && <p className="spec text-jade mt-1">−{p.discountPercent}%</p>}
           </div>
           <a

@@ -1,116 +1,289 @@
-// Import real Shopee products (scraped via Apify, sorted by sales).
-// affiliateUrl uses the canonical /product/{shopId}/{itemId} form so the
-// "Mua trên Shopee" button always resolves to the exact item.
-// Replace affiliateUrl with your own affiliate-tracked link (Shopee Affiliate /
-// AccessTrade) via the /admin page to start earning commission.
+// Import real Shopee products into the catalogue.
+//
+// SOURCE OF TRUTH: Shopee's own product API (api/v4/pdp/get_pc), read per item.
+// The previous version of this file came from an Apify keyword scrape whose
+// `name` column was shifted one row down, so every product showed its
+// neighbour's title and photo. Every field below was re-read from Shopee and
+// checked byte-for-byte against the source before being written here.
+//
+// soldCount stays 0 on purpose: Shopee stopped disclosing it (historical_sold
+// is null for every item). ratingCount is the real review count and is the
+// trust signal the storefront displays instead.
+//
+// affiliateUrl uses the canonical /product/{shopId}/{itemId} form. routes/affiliate.js
+// wraps it in an AccessTrade deep-link at redirect time when AFFILIATE_DEEP_LINK_ID is set.
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
-const IMG = '' // image_url values below are already absolute
 
-// [itemId, shopId, name, price, originalPrice, rating, imageUrl, category, featured]
-const RAW = [
-  // ===== Tai nghe Bluetooth (phụ kiện điện thoại) =====
-  ['41869171810','1625115902','Tai nghe chơi game X55 Bluetooth 5.4 chống nước, màn hình LED, pin trâu, độ trễ thấp',61000,90000,4.5,'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mepjmu0aocnb4f','phụ kiện điện thoại',true],
-  ['54208152799','1698873565','Tai nghe Bluetooth không dây Pro 4 TWS 5.3 chống ồn, thể thao & chơi game',15000,110000,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mpiuk5zu66fi2b','phụ kiện điện thoại',true],
-  ['28991133742','1618525064','Tai nghe không dây Bluetooth X15 TWS, chơi game Bluetooth 5.3 tích hợp micrô',60760,90000,4.4,'https://down-vn.img.susercontent.com/file/sg-11134201-82635-ml27jbwucykm0c','phụ kiện điện thoại',true],
-  ['43317549734','1613586614','Tai nghe Bluetooth Mini Pro chống nước, kháng ồn, bảo hành lỗi 1 đổi 1',84000,100000,4.8,'https://down-vn.img.susercontent.com/file/sg-11134201-82583-mr8ekm8g229zbc','phụ kiện điện thoại',false],
-  ['19076200751','73624532','Tai nghe Gaming X15 / G11 PRO TWS Bluetooth 5.0, có mic độ trễ cực thấp',59000,80000,4.5,'https://down-vn.img.susercontent.com/file/sg-11134253-822yv-mib4tro6nsw16a','phụ kiện điện thoại',false],
-  ['14609320217','53118009','Tai nghe Bluetooth không dây X15 TWS, màn hình LED Bluetooth 5.3 tích hợp mic',64200,100000,5.0,'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-m226l1bthfvf73','phụ kiện điện thoại',false],
-  ['45257587010','1642156085','Tai nghe Bluetooth Pro 4 không dây TWS cảm ứng chạm, khử tiếng ồn',37566,76980,4.6,'https://down-vn.img.susercontent.com/file/sg-11134253-820ol-mneiffr1af44e1','phụ kiện điện thoại',false],
-  ['40124510623','1365811412','Tai nghe Bluetooth Pro kết nối không dây, pin khoẻ, bass ấm',58000,90000,4.3,'https://down-vn.img.susercontent.com/file/sg-11134201-8262r-mllgybgpjhfnb6','phụ kiện điện thoại',false],
-
-  // ===== Sạc dự phòng (pin sạc dự phòng) =====
-  ['24156139007','1125155158','Dosen Pro sạc dự phòng PD22.5W 10000-50000mAh, màn hình LED',228626,369076,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-7ra0g-m6c1zfx6og8mca','pin sạc dự phòng',true],
-  ['26458860279','1125606514','Dosen Pro sạc dự phòng PD22.5W 30000-80000mAh, màn hình LED',352350,584700,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-lza94jfvj9e518','pin sạc dự phòng',true],
-  ['28420521474','1125606514','Dosen sạc dự phòng PD22.5W 10000-25000mAh, hiển thị mức pin LED',228626,369076,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-medseo7n2xaf84','pin sạc dự phòng',true],
-  ['40251537408','1125155158','Dosen Pro sạc dự phòng 10000-42000mAh PD22.5W, sạc nhanh hai cổng',352350,556857,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-7ra0g-m9znfzsb5z0i00','pin sạc dự phòng',false],
-  ['57706144554','1125155158','Dosen Mini từ tính không dây 10000-12000mAh 22.5W, có nam châm',333004,772273,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mkn7surjb40752','pin sạc dự phòng',false],
-  ['40028763819','1125155158','Dosen Pro Mini từ tính không dây 22.5W 10000-12000mAh, có nam châm',381099,441660,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mknb51qg5m9t95','pin sạc dự phòng',false],
-  ['43050973866','1125155158','Sạc dự phòng PD22.5W Dosen Pro K7 10000-50000mAh, màn hình LED',228626,369076,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-7ra0g-m9si5xo9m1j854','pin sạc dự phòng',false],
-  ['24910953759','1125158313','Dosen sạc dự phòng PD22.5W 10000-20000mAh, dây đôi tự mang theo',217325,384307,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-lr2xydzupuis02','pin sạc dự phòng',false],
-
-  // ===== Sạc nhanh & cáp (sạc nhanh) =====
-  ['41078788493','1125606514','Dosen Pro cáp sạc nhanh PD 60W Type-C sang Type-C 1-2M (Macbook/iPad/Samsung)',61800,139960,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mma4m0d7w0zz78','sạc nhanh',true],
-  ['50206229167','1125158313','Dosen Pro cáp sạc nhanh PD 100W Type-C sang Type-C (iPhone 15/Macbook Pro)',61800,139960,5.0,'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mma4peliwg78d5','sạc nhanh',true],
-  ['40231311373','1125155158','Bộ sạc 65W Samsung siêu nhanh 2.0 Type-C kèm cáp 5A (Galaxy S20/S21/S22)',57700,131960,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mouxedh4shkx36','sạc nhanh',true],
-  ['28244234061','1125155158','Bộ sạc USB-C UGREEN 30W Nexode GaN PPS (iPhone 16/15/Galaxy S25)',69980,159960,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mma4g9rm7hu00b','sạc nhanh',false],
-  ['28625261821','325696535','Bộ sạc Samsung 25/45W củ + cáp Type-C (Note 10/20, S21/S22 Ultra)',162000,269000,4.9,'https://down-vn.img.susercontent.com/file/cn-11134207-820l4-meth6q15e68650','sạc nhanh',false],
-  ['48200823921','1655698552','Bộ sạc siêu nhanh Xiaomi MI 120W Turbo + cáp USB-C 6A (MI 11-15/Redmi)',41782,107951,4.6,'https://down-vn.img.susercontent.com/file/sg-11134253-821f3-mh1ou6ic03yh8a','sạc nhanh',false],
-  ['41450755372','1454455021','Củ sạc nhanh GaN 200W, 4 cổng PD Type-C, sạc đa thiết bị',35000,88718,5.0,'https://down-vn.img.susercontent.com/file/sg-11134201-7rfib-m9pu3gndmyf445','sạc nhanh',false],
-  ['28512157284','1324308924','Sạc nhanh OPPO 65W SUPER VOOC, củ + dây USB to Type-C chính hãng',73000,120000,4.8,'https://down-vn.img.susercontent.com/file/sg-11134253-823ra-moic575vx62zcc','sạc nhanh',false],
-
-  // ===== Đèn LED trang trí (đèn led) =====
-  ['43258316432','1326834591','Đèn dây LED ARGB 16 triệu màu 5M/10M, điều khiển điện thoại, nháy theo nhạc, decor phòng',75479,96128,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mc45awlgnvca55','đèn led',true],
-  ['22457174137','1003521646','Đèn Galaxy Cực Quang USB LED chiếu bầu trời, decor phòng ngủ, điều khiển từ xa',199999,249999,4.5,'https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-lmlnaub8n9b355','đèn led',true],
-  ['25473508880','1053563596','Đèn Cực Quang chiếu bầu trời Galaxy UStyle Q6S, decor phòng ngủ, điều khiển từ xa',59000,100000,4.7,'https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-lza8wcu330p9f4','đèn led',true],
-  ['28179965010','1155427994','Goldstar đèn ngủ để bàn LED 3D chiếu sóng nước, 16 màu RGB',43500,50000,4.7,'https://down-vn.img.susercontent.com/file/vn-11134207-7ra0g-m7hbqpg9uzmg7b','đèn led',false],
-  ['25944454662','1133531707','Dây LED RGB dải USB 16 triệu màu, điều khiển remote, trang trí decor phòng',99000,139000,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mjdt5nj5xpfl4e','đèn led',false],
-  ['40559417524','1297127080','Đèn Galaxy cực quang chiếu trần 3D dải ngân hà, cảm biến nhạc, decor phòng',106820,196000,4.7,'https://down-vn.img.susercontent.com/file/cn-11134207-820l4-mi9nfzfg3eh268','đèn led',false],
-  ['41203188085','50626807','Đèn NEON FLEX 10M 5V ARGB, dây neon chạy đuổi, decor tường phòng ngủ/làm việc',67520,120000,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mal0flsd3z4cc7','đèn led',false],
-  ['40608279896','1326834591','Dây đèn LED sợi tóc Neon 220V có phích cắm, chống nước, dẻo, viền trang trí',75479,96128,4.8,'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mc3j3ctyj2xaac','đèn led',false],
-
-  // ===== Chuột gaming không dây (chuột gaming) =====
-  ['15509326183','390877573','Chuột Silent Gaming Atas F30 không dây Bluetooth 3 MODE, pin 500mAh 50h, có app Macro',64000,90000,4.9,'https://down-vn.img.susercontent.com/file/0c5201ea2a48a683de34f71e0191121b','chuột gaming',true],
-  ['26609027692','131085332','Chuột Gaming LEAVEN X3 Chip Pro không dây, có dock sạc, 3 mức DPI, LED RGB',165170,300000,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-lzponjmp4kel18','chuột gaming',true],
-  ['44375866256','1588249983','Chuột Gaming không dây Attack Shark X11 dock sạc, 3 chế độ kết nối, tặng griptape',288000,400000,4.5,'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mq7aw6ta5blt78','chuột gaming',true],
-  ['22010951491','392454501','Chuột không dây gaming TEKKIN INPHIC A9 PRO Bluetooth silent, pin sạc, 6 nút, LED RGB',184000,239000,4.9,'https://down-vn.img.susercontent.com/file/sg-11134201-22120-lysspcsim3kv7c','chuột gaming',false],
-  ['29994060777','184461269','Chuột Gaming không dây T28 có đèn LED, click không tiếng ồn, bảo hành 12 tháng',369000,458000,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-m59qc579etsn9b','chuột gaming',false],
-  ['14109335337','390877573','Chuột không dây Bluetooth 2-in-1 chế độ kép 2.4GHz, im lặng, chỉnh DPI 3 cấp',64000,90000,4.9,'https://down-vn.img.susercontent.com/file/4a709cda034249658832c498d210042f','chuột gaming',false],
-  ['53303675114','889908151','Chuột Bluetooth 5.0 không dây gaming sạc pin TEKKIN Inphic M6P cho game thủ',151250,362500,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mjgjf7fhn6yo8b','chuột gaming',false],
-  ['27421845442','178808689','Chuột Gaming không dây YINOIAO A7 LED tự động đổi màu, DPI 3600, cho máy tính',450000,null,4.9,'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-m48rhdmf67ow42','chuột gaming',false],
+const PRODUCTS = [
+  { itemId: '28991133742', shopId: '1618525064', name: 'Tai nghe Bluetooth không dây pro 4 TWS 5.3", chống ồn, phù hợp cho thể thao và chơi game.',
+    price: 19900, priceMax: null, orig: 60000, discount: 67,
+    rating: 4.31, reviews: 1477, star5: 1066, image: 'https://down-vn.img.susercontent.com/file/sg-11134201-82635-ml27jbwucykm0c',
+    shop: 'Easy shop1688', shopLoc: 'Thành phố Hồ Chí Minh', shopRating: 4.29, shopFollowers: 117,
+    shopVerified: true, shopOfficial: false, shopResponse: 100,
+    category: 'phụ kiện điện thoại', featured: true },
+  { itemId: '41869171810', shopId: '1625115902', name: 'Tai nghe Bluetooth không dây P4 TWS có chức năng khử tiếng ồn dành cho thể thao và chơi game',
+    price: 19900, priceMax: null, orig: 60000, discount: 67,
+    rating: 4.22, reviews: 1356, star5: 934, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mepjmu0aocnb4f',
+    shop: 'Super Cheap 2020', shopLoc: 'Thành phố Hồ Chí Minh', shopRating: 4.24, shopFollowers: 45,
+    shopVerified: true, shopOfficial: false, shopResponse: 100,
+    category: 'phụ kiện điện thoại', featured: true },
+  { itemId: '54208152799', shopId: '1698873565', name: 'Tai nghe chơi game X55 Bluetooth 5.4 chống nước, màn hình LED pin Trâu, độ trễ thấp,thiết kế nhỏ gọn',
+    price: 15000, priceMax: null, orig: 110000, discount: 86,
+    rating: 4.44, reviews: 111, star5: 87, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mpiuk5zu66fi2b',
+    shop: 'Gấu trúc đỏ sạc dự phòng', shopLoc: 'Thành phố Hà Nội', shopRating: 4.43, shopFollowers: 2311,
+    shopVerified: true, shopOfficial: false, shopResponse: 100,
+    category: 'phụ kiện điện thoại', featured: true },
+  { itemId: '14609320217', shopId: '53118009', name: 'Tai nghe Gaming X15 / G11 PRO Tws Bluetooth 5.0.Tai nghe chơi game bluetooth, Không dây có mic với độ trễ cực thấp',
+    price: 64200, priceMax: 65000, orig: 100000, discount: 36,
+    rating: 4.70, reviews: 6298, star5: 5452, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-m226kox3lr6m1a',
+    shop: 'Hauhaushop91', shopLoc: 'Thành phố Hải Phòng', shopRating: 4.74, shopFollowers: 103360,
+    shopVerified: true, shopOfficial: false, shopResponse: 100,
+    category: 'phụ kiện điện thoại', featured: false },
+  { itemId: '40124510623', shopId: '1365811412', name: 'Tai Nghe Bluetooth pro 4 Không Dây TWS Cảm Ứng Chạm Khử Tiếng Ồn Dùng Chơi Game, Nghe Nhạc',
+    price: 19900, priceMax: null, orig: 60000, discount: 67,
+    rating: 4.30, reviews: 1925, star5: 1390, image: 'https://down-vn.img.susercontent.com/file/sg-11134201-8262r-mllgybgpjhfnb6',
+    shop: 'Gadget Hub VN', shopLoc: 'Thành phố Hồ Chí Minh', shopRating: 4.35, shopFollowers: 242,
+    shopVerified: false, shopOfficial: false, shopResponse: 100,
+    category: 'phụ kiện điện thoại', featured: false },
+  { itemId: '19076200751', shopId: '73624532', name: 'Tai Nghe Bluetooth Mini Pro Chống Nước Kháng Ồn Âm Thanh Chất Lượng Kèm Bảo Hành Lỗi 1 Đổi 1',
+    price: 59000, priceMax: null, orig: 80000, discount: 26,
+    rating: 4.42, reviews: 1120, star5: 846, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-lwjs5b864gd705',
+    shop: 'Shop Chill 4G', shopLoc: 'Thành phố Hà Nội', shopRating: 4.50, shopFollowers: 879,
+    shopVerified: true, shopOfficial: false, shopResponse: 67,
+    category: 'phụ kiện điện thoại', featured: false },
+  { itemId: '45257587010', shopId: '1642156085', name: 'Tai nghe Bluetooth không dây X15 Tws Tai nghe chơi game có màn hình LED bluetooth 5.3 tích hợp mic',
+    price: 37566, priceMax: 66482, orig: 76980, discount: 51,
+    rating: 4.41, reviews: 551, star5: 411, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mm5vyyikk1dv57',
+    shop: 'Vectra Sound', shopLoc: 'Thành phố Hà Nội', shopRating: 4.39, shopFollowers: 24,
+    shopVerified: true, shopOfficial: false, shopResponse: 100,
+    category: 'phụ kiện điện thoại', featured: false },
+  { itemId: '43317549734', shopId: '1613586614', name: 'Tai nghe không dây Bluetooth X15 Tws, Tai nghe chơi game Bluetooth 5.3 có micrô tích hợp',
+    price: 19900, priceMax: null, orig: 60000, discount: 67,
+    rating: 4.31, reviews: 318, star5: 239, image: 'https://down-vn.img.susercontent.com/file/sg-11134201-82583-mr8ekm8g229zbc',
+    shop: 'Small retail shops', shopLoc: 'Thành phố Hồ Chí Minh', shopRating: 4.37, shopFollowers: 30,
+    shopVerified: true, shopOfficial: false, shopResponse: 100,
+    category: 'phụ kiện điện thoại', featured: false },
+  { itemId: '24156139007', shopId: '1125155158', name: 'dosen Sạc dự phòng power bank pd22.5w 10000mah 30000mah 50000mah pin dự phòng màn hình led tích hợp tích hợp',
+    price: 228626, priceMax: null, orig: 369076, discount: 38,
+    rating: 4.79, reviews: 3306, star5: 2965, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7ra0g-m6c1zfx6og8mca',
+    shop: 'DOSEN VN', shopLoc: 'Thành phố Hà Nội', shopRating: 4.75, shopFollowers: 3842,
+    shopVerified: false, shopOfficial: true, shopResponse: 100,
+    category: 'pin sạc dự phòng', featured: true },
+  { itemId: '26458860279', shopId: '1125606514', name: 'dosen sạc dự phòng pd22.5w 10000mah 25000mah tự mang theo dây đôi pin dự phòng màn hình led tích hợp tích hợp',
+    price: 352350, priceMax: null, orig: 584700, discount: 40,
+    rating: 4.86, reviews: 1119, star5: 1040, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-lza93ta5tcptdb',
+    shop: 'DOSEN PRO', shopLoc: 'Thành phố Hà Nội', shopRating: 4.74, shopFollowers: 14313,
+    shopVerified: false, shopOfficial: true, shopResponse: 100,
+    category: 'pin sạc dự phòng', featured: true },
+  { itemId: '28420521474', shopId: '1125606514', name: 'dosen pro sạc dự phòng pd22.5w 30000mah 12000mah 80000mah pin dự phòng màn hình Led tích hợp tích hợp',
+    price: 228626, priceMax: null, orig: 369076, discount: 38,
+    rating: 4.84, reviews: 510, star5: 466, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-meds2vczxkat69',
+    shop: 'DOSEN PRO', shopLoc: 'Thành phố Hà Nội', shopRating: 4.74, shopFollowers: 14313,
+    shopVerified: false, shopOfficial: true, shopResponse: 100,
+    category: 'pin sạc dự phòng', featured: true },
+  { itemId: '43050973866', shopId: '1125155158', name: 'Dosen Sạc dự phòng pd22.5w 10000mah 30000mah 50000mah pin dự phòng màn hình led tích hợp tích hợp',
+    price: 228626, priceMax: null, orig: 369076, discount: 38,
+    rating: 4.80, reviews: 1101, star5: 991, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7ra0g-m9si5xo9m1j854',
+    shop: 'DOSEN VN', shopLoc: 'Thành phố Hà Nội', shopRating: 4.75, shopFollowers: 3842,
+    shopVerified: false, shopOfficial: true, shopResponse: 100,
+    category: 'pin sạc dự phòng', featured: false },
+  { itemId: '40251537408', shopId: '1125155158', name: 'Dosen sạc dự phòng pd22.5w 10000mAh 20000mAh 25000mah Power bank Với màn hình hiển thị mức Led',
+    price: 352350, priceMax: null, orig: 556857, discount: 37,
+    rating: 4.76, reviews: 494, star5: 442, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7ra0g-m9znfzsb5z0i00',
+    shop: 'DOSEN VN', shopLoc: 'Thành phố Hà Nội', shopRating: 4.75, shopFollowers: 3842,
+    shopVerified: false, shopOfficial: true, shopResponse: 100,
+    category: 'pin sạc dự phòng', featured: false },
+  { itemId: '40028763819', shopId: '1125155158', name: 'Dosen Mini Từ Tính Không Dây 10000mah 12000mAh 22.5W Sạc Nhanh Power Bank có nam châm thích hợp cho phone',
+    price: 381099, priceMax: null, orig: 441660, discount: 14,
+    rating: 4.74, reviews: 121, star5: 105, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mknb51qg5m9t95',
+    shop: 'DOSEN VN', shopLoc: 'Thành phố Hà Nội', shopRating: 4.75, shopFollowers: 3842,
+    shopVerified: false, shopOfficial: true, shopResponse: 100,
+    category: 'pin sạc dự phòng', featured: false },
+  { itemId: '57706144554', shopId: '1125155158', name: 'Dosen sạc dự phòng pd22.5w 10000mah 20000mah tự mang theo dây đôi pin dự phòng màn hình led tích hợp tích hợp',
+    price: 333004, priceMax: null, orig: 772273, discount: 57,
+    rating: 4.93, reviews: 54, star5: 52, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mkn7s4jcjpj962',
+    shop: 'DOSEN VN', shopLoc: 'Thành phố Hà Nội', shopRating: 4.75, shopFollowers: 3842,
+    shopVerified: false, shopOfficial: true, shopResponse: 100,
+    category: 'pin sạc dự phòng', featured: false },
+  { itemId: '41078788493', shopId: '1125606514', name: 'DOSEN PRO Cáp USB loại C 5A cho công nghệ sạc nhanh và sạc nhanh cho Huawei / Xiaomi',
+    price: 61800, priceMax: null, orig: 139960, discount: 56,
+    rating: 4.84, reviews: 427, star5: 385, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mma4m0d7w0zz78',
+    shop: 'DOSEN PRO', shopLoc: 'Thành phố Hà Nội', shopRating: 4.74, shopFollowers: 14313,
+    shopVerified: false, shopOfficial: true, shopResponse: 100,
+    category: 'sạc nhanh', featured: true },
+  { itemId: '40231311373', shopId: '1125155158', name: 'DOSEN 1M-2M Dây cáp sạc nhanh PD 60W từ Type-C sang Type-C tiện dụng cho Phone 15 Macbook Pro iPad Xiaomi Samsung',
+    price: 57700, priceMax: null, orig: 131960, discount: 56,
+    rating: 4.78, reviews: 67, star5: 61, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mouxe6wk2vi87e',
+    shop: 'DOSEN VN', shopLoc: 'Thành phố Hà Nội', shopRating: 4.75, shopFollowers: 3842,
+    shopVerified: false, shopOfficial: true, shopResponse: 100,
+    category: 'sạc nhanh', featured: true },
+  { itemId: '28625261821', shopId: '325696535', name: 'Bộ sạc USB C UGREEN 30W Nexode GaN PPS Khối sạc tường nhanh gọn Bộ chuyển đổi nguồn USB-C cho iPhone 16 Pro Max / 15 / 14 / 13 Galaxy S25 S24 Ultra / S23 (Đen)',
+    price: 189000, priceMax: null, orig: 269000, discount: 30,
+    rating: 4.92, reviews: 5807, star5: 5525, image: 'https://down-vn.img.susercontent.com/file/cn-11134207-820l4-meth6q15e68650',
+    shop: 'Ugreen Official Shop', shopLoc: 'Thành phố Hà Nội', shopRating: 4.92, shopFollowers: 677854,
+    shopVerified: false, shopOfficial: true, shopResponse: 100,
+    category: 'sạc nhanh', featured: false },
+  { itemId: '48200823921', shopId: '1655698552', name: 'Bộ sạc Samsung 25 / 45w CỦ CÁP DÂY SẠC NHANH TYPE-C cho Note 10 Plus Note 20 S21 S22 S22 Plus S22 Cáp sạc và Ultra Sansung',
+    price: 41782, priceMax: null, orig: 107951, discount: 61,
+    rating: 4.57, reviews: 1975, star5: 1616, image: 'https://down-vn.img.susercontent.com/file/cn-11134207-820l4-mgnno872kruwe9',
+    shop: 'TechPulseGear.vn', shopLoc: 'Thành phố Hồ Chí Minh', shopRating: 4.65, shopFollowers: 206,
+    shopVerified: true, shopOfficial: false, shopResponse: 100,
+    category: 'sạc nhanh', featured: false },
+  { itemId: '41450755372', shopId: '1454455021', name: 'Cáp sạc nhanh UGREEN 3A 18w Type-C USB-C nylon bện thích hợp cho Redmi Xiaomi 13 12 Pro Samsung galaxy s22 one plus',
+    price: 30000, priceMax: null, orig: 88718, discount: 66,
+    rating: 4.96, reviews: 1194, star5: 1158, image: 'https://down-vn.img.susercontent.com/file/sg-11134201-7rfib-m9pu3gndmyf445',
+    shop: 'UGREEN VIETNAM Official Store', shopLoc: 'Tỉnh Tây Ninh', shopRating: 4.93, shopFollowers: 119081,
+    shopVerified: false, shopOfficial: true, shopResponse: 100,
+    category: 'sạc nhanh', featured: false },
+  { itemId: '28512157284', shopId: '1324308924', name: 'Củ Sạc Nhanh GaN 200W, 4 Cổng PD Type-C, Sạc Nhanh Đa Thiết Bị',
+    price: 73000, priceMax: null, orig: 120000, discount: 39,
+    rating: 4.80, reviews: 910, star5: 809, image: 'https://down-vn.img.susercontent.com/file/sg-11134201-822ww-moatij5rh1c113',
+    shop: 'TechShop - Củ Cáp Sạc 120W', shopLoc: 'Thành phố Hồ Chí Minh', shopRating: 4.81, shopFollowers: 10767,
+    shopVerified: true, shopOfficial: false, shopResponse: 100,
+    category: 'sạc nhanh', featured: false },
+  { itemId: '28244234061', shopId: '1125155158', name: 'Dây Cáp DOSEN PD 20W Nối Đầu Type-C Sang Đầu Sạc Nhanh Hỗ Trợ Truyền Dữ Liệu 480Mbps',
+    price: 69980, priceMax: null, orig: 159960, discount: 56,
+    rating: 4.77, reviews: 737, star5: 660, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mma4g9rm7hu00b',
+    shop: 'DOSEN VN', shopLoc: 'Thành phố Hà Nội', shopRating: 4.75, shopFollowers: 3842,
+    shopVerified: false, shopOfficial: true, shopResponse: 100,
+    category: 'sạc nhanh', featured: false },
+  { itemId: '25473508880', shopId: '1053563596', name: 'Đèn GALAXY Cực Quang USB LED Chiếu Bầu Trời Cực Quang Trang Trí, Decor Phòng Ngủ, Điều Khiển Từ Xa',
+    price: 59000, priceMax: 61960, orig: 100000, discount: 41,
+    rating: 4.74, reviews: 10135, star5: 8847, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mik1y2lqvqwy76',
+    shop: 'Love House Fashion', shopLoc: 'Tỉnh Tây Ninh', shopRating: 4.73, shopFollowers: 5330,
+    shopVerified: true, shopOfficial: false, shopResponse: 100,
+    category: 'đèn led', featured: true },
+  { itemId: '22457174137', shopId: '1003521646', name: 'Đèn dây led ARGB 16 triệu màu 20M 10M 5M điều khiển bằng điện thoại, nháy theo nhạc, trang trí phòng',
+    price: 49999, priceMax: 199999, orig: 69999, discount: 29,
+    rating: 4.49, reviews: 1975, star5: 1578, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-lmlnaub8n9b355',
+    shop: 'ZCY Đèn LED trang trí store', shopLoc: 'Thành phố Hải Phòng', shopRating: 4.56, shopFollowers: 2313,
+    shopVerified: false, shopOfficial: false, shopResponse: 99,
+    category: 'đèn led', featured: true },
+  { itemId: '43258316432', shopId: '1326834591', name: 'Đèn dây led RGB 5M 10M trang trí decor phòng, decor bàn gaming, có chế độ nháy theo nhạc điều chỉnh bằng remote và app',
+    price: 75479, priceMax: 193120, orig: 96128, discount: 21,
+    rating: 4.69, reviews: 293, star5: 252, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mc45awlgnvca55',
+    shop: 'Đèn chiếu sáng DIỀU HÂU', shopLoc: 'Thành phố Hà Nội', shopRating: 4.52, shopFollowers: 1639,
+    shopVerified: true, shopOfficial: false, shopResponse: 77,
+    category: 'đèn led', featured: true },
+  { itemId: '28179965010', shopId: '1155427994', name: 'Đèn Cực Quang Chiếu Bầu Trời Galaxy UStyle Q6S Trang Trí, LED Cực Quang Decor Phòng Ngủ, Điều Khiển Từ Xa',
+    price: 43500, priceMax: null, orig: 50000, discount: 13,
+    rating: 4.75, reviews: 6304, star5: 5452, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7ra0g-m7hbqpg9uzmg7b',
+    shop: 'Văn Phòng Phẩm Hải Vân', shopLoc: 'Thành phố Hải Phòng', shopRating: 4.80, shopFollowers: 42625,
+    shopVerified: true, shopOfficial: false, shopResponse: 99,
+    category: 'đèn led', featured: false },
+  { itemId: '25944454662', shopId: '1133531707', name: 'Goldstar Đèn ngủ để bàn ,đèn led 3D chiếu hình sóng nước cực chill, 16 màu RGB ,quà Giáng sinh',
+    price: 99000, priceMax: null, orig: 139000, discount: 29,
+    rating: 4.77, reviews: 556, star5: 490, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mjdt5nj5xpfl4e',
+    shop: 'GoldStar Home Life', shopLoc: 'Thành phố Hồ Chí Minh', shopRating: 4.61, shopFollowers: 3725,
+    shopVerified: true, shopOfficial: false, shopResponse: 100,
+    category: 'đèn led', featured: false },
+  { itemId: '41203188085', shopId: '50626807', name: 'Đèn galaxy cực quang, đèn chiếu trần nhà 3d, dải ngân hà, cảm biến nhạc, decor, trang trí phòng, đèn bay phòng.',
+    price: 67520, priceMax: 68950, orig: 120000, discount: 44,
+    rating: 4.78, reviews: 551, star5: 487, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mal0flsd3z4cc7',
+    shop: 'Decor Land', shopLoc: 'Thành phố Hà Nội', shopRating: 4.79, shopFollowers: 2664,
+    shopVerified: true, shopOfficial: false, shopResponse: 95,
+    category: 'đèn led', featured: false },
+  { itemId: '40559417524', shopId: '1297127080', name: 'Dây Led RGB 2025, Dải LED USB Đèn 16 Triệu Màu  Trang Trí Decor Phòng, Điều Khiển Bằng Remote Đèn trang trí Tết',
+    price: 63000, priceMax: 199000, orig: 136000, discount: 54,
+    rating: 4.70, reviews: 429, star5: 374, image: 'https://down-vn.img.susercontent.com/file/cn-11134207-820l4-mi9nfzfg3eh268',
+    shop: 'NovaBuy', shopLoc: 'Thành phố Hồ Chí Minh', shopRating: 4.68, shopFollowers: 1457,
+    shopVerified: true, shopOfficial: false, shopResponse: 100,
+    category: 'đèn led', featured: false },
+  { itemId: '40608279896', shopId: '1326834591', name: 'Dây Đèn Led đuổi ARGB 10 Mét Cổng USB 16 Triệu Màu Nháy Theo Nhạc, Chống Nước, Điều Khiển Remote, Cảm Biến Âm Thanh',
+    price: 75479, priceMax: 193120, orig: 96128, discount: 21,
+    rating: 4.82, reviews: 99, star5: 91, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mc3j3ctyj2xaac',
+    shop: 'Đèn chiếu sáng DIỀU HÂU', shopLoc: 'Thành phố Hà Nội', shopRating: 4.52, shopFollowers: 1639,
+    shopVerified: true, shopOfficial: false, shopResponse: 77,
+    category: 'đèn led', featured: false },
+  { itemId: '15509326183', shopId: '390877573', name: 'Chuột Gaming Không Dây T28 Dành Cho Game Thủ Chống Ồn Có Đèn LED Chơi Game Cực Đã Bảo Hành 12 Tháng',
+    price: 64000, priceMax: null, orig: 90000, discount: 29,
+    rating: 4.86, reviews: 9473, star5: 8751, image: 'https://down-vn.img.susercontent.com/file/ee16962a0937b7313c75e818d9af8f1a',
+    shop: 'tongkhochuyensi68', shopLoc: 'Thành phố Hải Phòng', shopRating: 4.86, shopFollowers: 125225,
+    shopVerified: true, shopOfficial: false, shopResponse: 99,
+    category: 'chuột gaming', featured: true },
+  { itemId: '26609027692', shopId: '131085332', name: 'Chuột Silent Gaming Atas F30 Không dây Bluetooth - 3 MODE  - Pin sạc 500mah - Sử dụng liên tục 50h - Có app Marco',
+    price: 164340, priceMax: null, orig: 300000, discount: 45,
+    rating: 4.90, reviews: 748, star5: 705, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mdb9z8m23dy40b',
+    shop: 'Gaming.House', shopLoc: 'Thành phố Hà Nội', shopRating: 4.81, shopFollowers: 181654,
+    shopVerified: true, shopOfficial: false, shopResponse: 98,
+    category: 'chuột gaming', featured: true },
+  { itemId: '44375866256', shopId: '1588249983', name: 'Chuột Gaming LEAVEN X3 Chip Pro, Chuột Không Dây Có Dock Sạc, 3 Mức DPI, Led RGB',
+    price: 288000, priceMax: null, orig: 400000, discount: 28,
+    rating: 4.52, reviews: 172, star5: 137, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mq7aw6ta5blt78',
+    shop: 'WXZ Technology', shopLoc: 'Thành phố Hà Nội', shopRating: 4.78, shopFollowers: 970,
+    shopVerified: true, shopOfficial: false, shopResponse: 90,
+    category: 'chuột gaming', featured: true },
+  { itemId: '27421845442', shopId: '178808689', name: 'Chuột Gaming Không Dây Attack Shark X11 dock sạc / Attack Shark R1 / 3 chế độ kết nối / tặng kèm griptape',
+    price: 180000, priceMax: 565000, orig: 180000, discount: 0,
+    rating: 4.86, reviews: 3733, star5: 3465, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-m48rhdmf67ow42',
+    shop: 'Sorn Gear', shopLoc: 'Thành phố Hà Nội', shopRating: 4.81, shopFollowers: 38375,
+    shopVerified: true, shopOfficial: false, shopResponse: 74,
+    category: 'chuột gaming', featured: false },
+  { itemId: '53303675114', shopId: '889908151', name: 'Chuột không dây Bluetooth 2 trong 1 Chế độ kép 2.4GHz Chế độ im lặng Chuột chơi game Điều chỉnh DPI 3 cấp độ',
+    price: 151250, priceMax: null, orig: 362500, discount: 58,
+    rating: 4.86, reviews: 126, star5: 112, image: 'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mjgjf7fhn6yo8b',
+    shop: 'UZ Store', shopLoc: 'Thành phố Hồ Chí Minh', shopRating: 4.80, shopFollowers: 161,
+    shopVerified: false, shopOfficial: false, shopResponse: 100,
+    category: 'chuột gaming', featured: false },
+  { itemId: '22010951491', shopId: '392454501', name: 'Chuột Gaming Không Dây YINOIAO A7 LED Tự Động Đổi Màu DPI 3600 Dùng Cho Máy Tính',
+    price: 184000, priceMax: null, orig: 239000, discount: 23,
+    rating: 4.88, reviews: 101, star5: 93, image: 'https://down-vn.img.susercontent.com/file/sg-11134201-22120-lysspcsim3kv7c',
+    shop: 'HD Store_Phukienso', shopLoc: 'Thành phố Hà Nội', shopRating: 4.86, shopFollowers: 15195,
+    shopVerified: true, shopOfficial: false, shopResponse: 100,
+    category: 'chuột gaming', featured: false },
 ]
 
-function discountPct(price, orig) {
-  if (!orig || orig <= price) return null
-  return Math.round((1 - price / orig) * 100)
-}
-
 async function main() {
-  console.log('🌱 Importing real Shopee products…')
-  let n = 0
-  // Store the DIRECT Shopee product URL. The AccessTrade affiliate wrapper is applied
-  // at redirect time in /api/go/:id (only when AFFILIATE_DEEP_LINK_ID is set), so links
-  // never 404 while the AccessTrade campaign is still pending approval.
-  for (const [itemId, shopId, name, price, orig, rating, image, category, featured] of RAW) {
-    const affiliateUrl = `https://shopee.vn/product/${shopId}/${itemId}`
+  let created = 0, updated = 0
+  for (const p of PRODUCTS) {
     const data = {
-      shopeeId: itemId,
-      name,
-      price,
-      originalPrice: orig,
-      discountPercent: discountPct(price, orig),
-      image,
-      images: [image],
-      rating,
-      ratingCount: 0,
+      name: p.name,
+      price: p.price,
+      priceMax: p.priceMax,
+      originalPrice: p.orig,
+      discountPercent: p.discount,
+      image: p.image,
+      images: [],
+      rating: p.rating,
+      ratingCount: p.reviews,
+      reviewStar5: p.star5,
       soldCount: 0,
       stock: 0,
-      shopId,
-      shopName: 'Shopee',
-      sellerLocation: null,
-      category,
-      featured,
+      shopId: p.shopId,
+      shopName: p.shop,
+      sellerLocation: p.shopLoc,
+      shopRating: p.shopRating,
+      shopFollowers: p.shopFollowers,
+      shopVerified: p.shopVerified,
+      shopOfficial: p.shopOfficial,
+      shopResponseRate: p.shopResponse,
+      category: p.category,
+      featured: p.featured,
       active: true,
-      affiliateUrl,
+      affiliateUrl: `https://shopee.vn/product/${p.shopId}/${p.itemId}`,
       affiliateSource: 'shopee',
-      commissionPct: 5
     }
+    const existing = await prisma.product.findUnique({ where: { shopeeId: p.itemId } })
     await prisma.product.upsert({
-      where: { shopeeId: itemId },
-      create: data,
-      update: {
-        name: data.name, price: data.price, originalPrice: data.originalPrice,
-        discountPercent: data.discountPercent, image: data.image, images: data.images,
-        rating: data.rating, category: data.category, featured: data.featured,
-        affiliateUrl: data.affiliateUrl, affiliateSource: 'shopee', commissionPct: 5
-      }
+      where: { shopeeId: p.itemId },
+      update: data,
+      create: { shopeeId: p.itemId, ...data },
     })
-    n++
+    existing ? updated++ : created++
   }
-  console.log(`✅ Imported ${n} real Shopee products.`)
+
+  // Listings that no longer resolve on Shopee must not stay clickable.
+  const keep = PRODUCTS.map((p) => p.itemId)
+  const { count: retired } = await prisma.product.updateMany({
+    where: { shopeeId: { notIn: keep }, active: true },
+    data: { active: false },
+  })
+
+  console.log(`Products: ${created} created, ${updated} updated, ${retired} retired`)
 }
 
 main()
-  .catch((e) => { console.error('❌ Import error:', e); process.exit(1) })
-  .finally(async () => { await prisma.$disconnect() })
+  .catch((e) => { console.error(e); process.exit(1) })
+  .finally(() => prisma.$disconnect())

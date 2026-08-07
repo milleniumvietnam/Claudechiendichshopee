@@ -31,7 +31,7 @@ module.exports = {
         },
         jade: {
           DEFAULT: '#0C7E5B', // verified / positive — 5.06:1 on white
-          100: '#E3F5EE',
+          100: '#EBF8F3',     // badge fill — lightened from #E3F5EE so jade text clears AA (4.47 -> 4.64:1)
         },
         slate: {
           DEFAULT: '#5B6478', // secondary text

@@ -23,7 +23,10 @@ export async function getProducts(req, res) {
         where,
         skip: parseInt(offset),
         take: parseInt(limit),
-        orderBy: { soldCount: 'desc' }
+        // Shopee stopped disclosing sold counts, so soldCount is 0 for every row
+        // and sorting by it produced an arbitrary order. Review count is the
+        // real popularity signal we hold.
+        orderBy: { ratingCount: 'desc' }
       }),
       prisma.product.count({ where })
     ]);

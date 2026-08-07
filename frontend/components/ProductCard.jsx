@@ -1,15 +1,18 @@
 import Link from 'next/link'
-import { price, catLabel, API_URL } from '../lib/format'
+import { price, priceLabel, catLabel, reviews, shopBadge, API_URL } from '../lib/format'
 
 /**
  * SIGNATURE: the spec ribbon.
  * A monospace strip under every product that reads like an instrument spec
- * line. It prints only values we actually hold — rating and category. Sold
- * counts and review counts are absent from our data, so they are absent here;
- * printing "0 đã bán" would cost more trust than it buys.
+ * line. It prints only values we actually hold.
+ *
+ * The ribbon now leads with rating AND review count, because a star average
+ * with no sample size behind it is the weakest claim on a sales page. Sold
+ * counts stay off the card: Shopee stopped disclosing them, so we have none.
  */
 export default function ProductCard({ product: p, priority = false }) {
   const off = p.discountPercent > 0 && p.originalPrice > p.price
+  const badge = shopBadge(p)
 
   return (
     <article className="group flex flex-col bg-white rounded-card border border-paper-300 shadow-card hover:shadow-lift hover:border-slate-200 transition-[box-shadow,border-color,transform] duration-300 ease-out hover:-translate-y-[3px]">
@@ -36,25 +39,43 @@ export default function ProductCard({ product: p, priority = false }) {
       </Link>
 
       <div className="flex flex-col flex-1 p-3.5 pt-3">
-        {/* spec ribbon — the rating never breaks across lines */}
+        {/* spec ribbon — rating and its sample size never break across lines */}
         <div className="flex items-center gap-2 mb-2 min-w-0">
           <span className="spec text-ink font-medium whitespace-nowrap shrink-0">
             ★ {p.rating?.toFixed(1)}
           </span>
           <span aria-hidden="true" className="text-slate-200 shrink-0">·</span>
-          <span className="spec truncate min-w-0">{catLabel(p.category)}</span>
+          <span className="spec truncate min-w-0">
+            {p.ratingCount > 0 ? reviews(p.ratingCount) : catLabel(p.category)}
+          </span>
         </div>
 
-        <h3 className="text-[14px] leading-[1.4] font-medium mb-3 line-clamp-2 min-h-[2.8em]">
+        <h3 className="text-[14px] leading-[1.4] font-medium mb-2.5 line-clamp-2 min-h-[2.8em]">
           <Link href={`/products/${p.id}`} className="hover:text-volt transition-colors duration-200">
             {p.name}
           </Link>
         </h3>
 
+        {/* who is actually shipping this — the question a cautious buyer asks next */}
+        {p.shopName && (
+          <div className="flex items-center gap-1.5 mb-3 min-w-0">
+            {badge && (
+              <span
+                className={`spec-chip shrink-0 font-semibold ${
+                  badge.tone === 'official' ? 'bg-jade-100 text-jade' : 'bg-paper-200 text-slate'
+                }`}
+              >
+                {badge.text}
+              </span>
+            )}
+            <span className="spec truncate min-w-0 normal-case">{p.shopName}</span>
+          </div>
+        )}
+
         <div className="mt-auto">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-3">
             <span className="font-mono font-bold text-[18px] sm:text-[19px] tracking-[-0.02em]">
-              {price(p.price)}
+              {priceLabel(p)}
             </span>
             {off && (
               <span className="font-mono text-[12px] text-slate-400 line-through">

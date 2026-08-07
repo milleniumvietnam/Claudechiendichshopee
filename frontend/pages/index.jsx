@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
-import { price, API_URL, SITE_URL } from '../lib/format'
+import { price, num, API_URL, SITE_URL } from '../lib/format'
 
 export async function getServerSideProps() {
   let products = []
@@ -28,6 +28,7 @@ export async function getServerSideProps() {
         maxPrice: Math.max(...prices),
         avgDiscount: Math.round(discounts.reduce((a, b) => a + b, 0) / discounts.length),
         catCount: cats.length,
+        reviewTotal: products.reduce((a, p) => a + (p.ratingCount || 0), 0),
       }
     : null
 
@@ -44,9 +45,13 @@ export async function getServerSideProps() {
    selection rule in the same register an instrument would. */
 function Readout({ stats }) {
   if (!stats) return null
+  // "Sorted by units sold" was carried over from an earlier data source. Shopee
+  // no longer discloses sold counts, so that line claimed a number we do not
+  // have; review volume is what the catalogue is actually ranked on.
   const rows = [
-    ['NGUỒN', 'Shopee VN · xếp theo lượt bán'],
+    ['NGUỒN', 'Shopee VN · xếp theo lượt đánh giá'],
     ['ĐÁNH GIÁ', `≥ ${stats.minRating}★ · trung bình ${stats.avgRating}★`],
+    ['NGƯỜI MUA', `${num(stats.reviewTotal)} đánh giá đã kiểm`],
     ['GIÁ', `${price(stats.minPrice)} – ${price(stats.maxPrice)}`],
     ['DANH MỤC', `${stats.catCount} nhóm`],
     ['GIẢM GIÁ', `trung bình ${stats.avgDiscount}%`],
