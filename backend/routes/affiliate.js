@@ -18,13 +18,23 @@ export async function goToAffiliate(req, res) {
 
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      select: { id: true, affiliateUrl: true, active: true }
+      select: { id: true, affiliateUrl: true, shopeeId: true, active: true }
     })
 
     if (!product || !product.active || !product.affiliateUrl) {
       // No affiliate link configured — send them to the storefront instead of a dead end
       const fallback = process.env.FRONTEND_URL || '/'
       return res.redirect(302, fallback)
+    }
+
+    // Build the final destination. If AFFILIATE_DEEP_LINK_ID is set (AccessTrade campaign
+    // approved), wrap the Shopee URL in the affiliate deep-link so clicks earn commission.
+    // If NOT set, go straight to Shopee — so links never 404 while approval is pending.
+    let destination = product.affiliateUrl
+    const deepId = process.env.AFFILIATE_DEEP_LINK_ID
+    const isDirectShopee = /^https?:\/\/(www\.)?shopee\.vn\//.test(product.affiliateUrl)
+    if (deepId && isDirectShopee) {
+      destination = `https://go.isclix.com/deep_link/${deepId}/?url=${encodeURIComponent(product.affiliateUrl)}&sub1=${product.shopeeId}&sub4=oneatweb`
     }
 
     // Fire-and-forget analytics (don't block the redirect on DB write)
@@ -44,7 +54,7 @@ export async function goToAffiliate(req, res) {
       })
     ]).catch(err => console.error('Click tracking failed:', err.message))
 
-    return res.redirect(302, product.affiliateUrl)
+    return res.redirect(302, destination)
   } catch (error) {
     console.error('Affiliate redirect error:', error)
     return res.redirect(302, process.env.FRONTEND_URL || '/')
