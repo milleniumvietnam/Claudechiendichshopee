@@ -3,78 +3,73 @@ module.exports = {
   content: [
     './pages/**/*.{js,ts,jsx,tsx}',
     './components/**/*.{js,ts,jsx,tsx}',
-    './app/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
       colors: {
-        // Premium luxury palette
-        'luxury': {
-          50: '#f8f6f3',
-          100: '#f0ebe4',
-          200: '#e8dfd4',
-          300: '#dcc9bc',
-          400: '#d4b9a1',
-          500: '#c9a583',
-          600: '#b89566',
-          700: '#9d7d52',
-          800: '#7d6441',
-          900: '#5c4930',
+        // Grounded in the subject: consumer electronics, not luxury goods.
+        ink: {
+          DEFAULT: '#0A0F1C', // a device screen when it's off
+          800: '#131A2B',
+          700: '#1D2739',
         },
-        'gold': {
-          50: '#fefdf8',
-          100: '#fdfaf0',
-          200: '#fbf3de',
-          300: '#f8e8c6',
-          400: '#f5dba8',
-          500: '#f0cd85',
-          600: '#e8bb5c',
-          700: '#d9a738',
-          800: '#c49025',
-          900: '#a17918',
-        }
+        paper: {
+          DEFAULT: '#FAFAFB', // cool neutral — deliberately not cream
+          200: '#F1F3F6',
+          300: '#E4E8EF',
+        },
+        volt: {
+          DEFAULT: '#2B4BFF', // charging-LED blue: links on light — 5.67:1 on paper
+          300: '#7C93FF',     // the same signal, lightened for dark panels — 6.81:1 on ink
+          600: '#1E39D6',
+          100: '#E8ECFF',
+        },
+        ember: {
+          DEFAULT: '#C24405', // the deal signal — 5.09:1 under white text
+          400: '#FF6A1A',     // untinted, for fills that carry no text
+          100: '#FFEDE2',
+        },
+        jade: {
+          DEFAULT: '#0C7E5B', // verified / positive — 5.06:1 on white
+          100: '#E3F5EE',
+        },
+        slate: {
+          DEFAULT: '#5B6478', // secondary text
+          400: '#8A93A6',
+          200: '#C9CFDA',
+        },
       },
       fontFamily: {
-        'display': ['Playfair Display', 'serif'],
-        'sans': ['Inter', 'sans-serif'],
+        // Display: technical grotesque — hardware-catalog personality.
+        display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+        // Body: drawn for Vietnamese diacritics (ế ữ ậ stack correctly).
+        sans: ['"Be Vietnam Pro"', 'system-ui', 'sans-serif'],
+        // Data: spec ribbons, prices, technical strings.
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        xs: ['12px', { lineHeight: '16px' }],
-        sm: ['14px', { lineHeight: '20px' }],
-        base: ['16px', { lineHeight: '24px' }],
-        lg: ['18px', { lineHeight: '28px' }],
-        xl: ['20px', { lineHeight: '28px' }],
-        '2xl': ['24px', { lineHeight: '32px' }],
-        '3xl': ['30px', { lineHeight: '36px' }],
-        '4xl': ['36px', { lineHeight: '40px' }],
-        '5xl': ['48px', { lineHeight: '52px' }],
+        'display-xl': ['clamp(2.75rem, 7vw, 5.25rem)', { lineHeight: '0.95', letterSpacing: '-0.035em', fontWeight: '700' }],
+        'display-lg': ['clamp(2rem, 4.5vw, 3.25rem)', { lineHeight: '1.02', letterSpacing: '-0.03em', fontWeight: '700' }],
+        'display-md': ['clamp(1.5rem, 3vw, 2.125rem)', { lineHeight: '1.1', letterSpacing: '-0.02em', fontWeight: '600' }],
+        spec: ['0.6875rem', { lineHeight: '1', letterSpacing: '0.09em' }],
       },
-      backdropBlur: {
-        xs: '2px',
+      borderRadius: {
+        card: '14px',
       },
       boxShadow: {
-        'luxury': '0 20px 40px rgba(0, 0, 0, 0.1)',
-        'luxury-lg': '0 25px 50px rgba(0, 0, 0, 0.15)',
-        'luxury-sm': '0 10px 20px rgba(0, 0, 0, 0.08)',
+        card: '0 1px 2px rgba(10,15,28,.05), 0 8px 24px -12px rgba(10,15,28,.16)',
+        lift: '0 2px 4px rgba(10,15,28,.06), 0 18px 40px -16px rgba(10,15,28,.24)',
       },
-      animation: {
-        'fade-in': 'fadeIn 0.5s ease-in-out',
-        'slide-down': 'slideDown 0.3s ease-out',
-        'pulse-subtle': 'pulseSubtle 3s ease-in-out infinite',
+      transitionTimingFunction: {
+        out: 'cubic-bezier(.2,.7,.3,1)',
       },
       keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideDown: {
-          '0%': { transform: 'translateY(-10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
-        pulseSubtle: {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.8' },
-        },
+        marquee: { from: { transform: 'translateX(0)' }, to: { transform: 'translateX(-50%)' } },
+        rise: { from: { opacity: '0', transform: 'translateY(14px)' }, to: { opacity: '1', transform: 'none' } },
+      },
+      animation: {
+        marquee: 'marquee 46s linear infinite',
+        rise: 'rise .5s cubic-bezier(.2,.7,.3,1) both',
       },
     },
   },

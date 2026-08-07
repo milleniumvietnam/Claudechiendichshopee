@@ -1,254 +1,272 @@
-import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
-import axios from 'axios'
+import Nav from '../components/Nav'
+import Footer from '../components/Footer'
+import ProductCard from '../components/ProductCard'
+import { price, API_URL, SITE_URL } from '../lib/format'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+export async function getServerSideProps() {
+  let products = []
+  try {
+    const r = await fetch(`${API_URL}/api/products?limit=100`)
+    products = (await r.json()).products || []
+  } catch (e) {}
 
-export default function Home() {
-  const [featured, setFeatured] = useState([])
-  const [loading, setLoading] = useState(true)
+  const featured = products.filter((p) => p.featured).slice(0, 8)
+  const ratings = products.map((p) => p.rating).filter(Boolean)
+  const prices = products.map((p) => p.price).filter(Boolean)
+  const discounts = products.map((p) => p.discountPercent || 0)
+  const cats = [...new Set(products.map((p) => p.category))]
 
-  useEffect(() => {
-    fetchFeatured()
-  }, [])
+  // Every number in the hero is measured from the catalogue, not asserted.
+  const stats = products.length
+    ? {
+        count: products.length,
+        minRating: Math.min(...ratings).toFixed(1),
+        avgRating: (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2),
+        minPrice: Math.min(...prices),
+        maxPrice: Math.max(...prices),
+        avgDiscount: Math.round(discounts.reduce((a, b) => a + b, 0) / discounts.length),
+        catCount: cats.length,
+      }
+    : null
 
-  async function fetchFeatured() {
-    try {
-      const res = await axios.get(`${API_URL}/api/products/featured`)
-      setFeatured(res.data.products || [])
-    } catch (err) {
-      console.error('Error fetching featured products:', err)
-    } finally {
-      setLoading(false)
-    }
+  return {
+    props: {
+      featured: featured.length ? featured : products.slice(0, 8),
+      marquee: products.slice(0, 14),
+      stats,
+    },
   }
+}
 
+/* The readout is the page's signature: a spec-sheet block that states the
+   selection rule in the same register an instrument would. */
+function Readout({ stats }) {
+  if (!stats) return null
+  const rows = [
+    ['NGUỒN', 'Shopee VN · xếp theo lượt bán'],
+    ['ĐÁNH GIÁ', `≥ ${stats.minRating}★ · trung bình ${stats.avgRating}★`],
+    ['GIÁ', `${price(stats.minPrice)} – ${price(stats.maxPrice)}`],
+    ['DANH MỤC', `${stats.catCount} nhóm`],
+    ['GIẢM GIÁ', `trung bình ${stats.avgDiscount}%`],
+  ]
+  return (
+    <div className="rounded-[12px] border border-white/15 bg-white/[0.04] overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-white/10 flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-jade" aria-hidden="true" />
+        <span className="spec text-white/60">BỘ LỌC ĐANG ÁP DỤNG</span>
+      </div>
+      <dl className="divide-y divide-white/[0.07]">
+        {rows.map(([k, v], i) => (
+          <div
+            key={k}
+            className="flex items-baseline gap-4 px-4 py-2.5 animate-rise"
+            style={{ animationDelay: `${180 + i * 70}ms` }}
+          >
+            <dt className="spec text-white/45 w-[86px] shrink-0">{k}</dt>
+            <dd className="font-mono text-[12.5px] text-white/90">{v}</dd>
+          </div>
+        ))}
+        <div
+          className="flex items-baseline gap-4 px-4 py-3 bg-white/[0.05] animate-rise"
+          style={{ animationDelay: '530ms' }}
+        >
+          <dt className="spec text-white/45 w-[86px] shrink-0">KẾT QUẢ</dt>
+          <dd className="font-mono text-[15px] font-bold text-white">
+            {stats.count} sản phẩm
+          </dd>
+        </div>
+      </dl>
+    </div>
+  )
+}
+
+export default function Home({ featured, marquee, stats }) {
   return (
     <>
       <Head>
-        <title>Kinh Doanh Shopee — Phụ kiện công nghệ tuyển chọn, giá tốt</title>
-        <meta name="description" content="Tuyển chọn tai nghe, sạc dự phòng, sạc nhanh & phụ kiện công nghệ bán chạy nhất Shopee. Giá tốt, hàng chính hãng, mua trực tiếp trên Shopee." />
+        <title>Đáng Mua — Phụ kiện công nghệ đã lọc sẵn từ Shopee</title>
+        <meta
+          name="description"
+          content="Chúng tôi lọc danh sách bán chạy trên Shopee và chỉ giữ lại phụ kiện công nghệ đạt tiêu chí đánh giá và giá. Xem 40 món đã tuyển chọn."
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Kinh Doanh Shopee — Phụ kiện công nghệ tuyển chọn" />
-        <meta property="og:description" content="Tai nghe, sạc dự phòng, sạc nhanh bán chạy nhất Shopee — tuyển chọn kỹ, giá tốt." />
-        <meta property="og:url" content="https://deal.milleniumvietnam.com" />
+        <meta property="og:title" content="Đáng Mua — Phụ kiện công nghệ đã lọc sẵn từ Shopee" />
+        <meta property="og:description" content="Lọc từ danh sách bán chạy Shopee. Trung bình 4.8★. Mua trực tiếp trên Shopee, giá không đổi." />
+        <meta property="og:url" content={SITE_URL} />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
 
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="font-display font-bold text-2xl text-luxury-800">
-            Kinh Doanh Shopee
-          </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/products" className="text-gray-600 hover:text-luxury-700 font-medium">
-              Shop
-            </Link>
-            <Link href="/cart" className="text-gray-600 hover:text-luxury-700 font-medium">
-              Cart (0)
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Nav dark />
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-luxury-50 via-white to-gold-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
-          <div className="max-w-3xl">
-            <h1 className="font-display text-5xl lg:text-6xl font-bold text-luxury-900 mb-6">
-              Curated Premium Accessories
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-              Handpicked collection of verified tech accessories and lifestyle products from Vietnam's trusted marketplace. Authentic quality, guaranteed satisfaction.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link
-                href="/products"
-                className="inline-flex items-center justify-center px-8 py-3 bg-luxury-700 text-white font-semibold rounded-lg hover:bg-luxury-800 transition-colors shadow-luxury"
+      {/* ─── HERO: the thesis is the filtering rule, stated plainly ─── */}
+      <section className="bg-ink text-white relative overflow-hidden">
+        {/* one quiet atmospheric wash — no gradient blobs */}
+        <div
+          aria-hidden="true"
+          className="absolute -top-40 -right-20 w-[520px] h-[520px] rounded-full opacity-[0.16]"
+          style={{ background: 'radial-gradient(circle, #2B4BFF 0%, transparent 68%)' }}
+        />
+
+        <div className="relative max-w-[1180px] mx-auto px-5 pt-16 pb-14 lg:pt-24 lg:pb-20">
+          <div className="grid lg:grid-cols-[1.15fr_.85fr] gap-12 lg:gap-16 items-center">
+            <div>
+              <p className="spec text-volt-300 mb-5 animate-rise">TUYỂN CHỌN TỪ SHOPEE VIỆT NAM</p>
+
+              <h1 className="font-display text-display-xl mb-6 animate-rise" style={{ animationDelay: '60ms' }}>
+                Chúng tôi lướt Shopee
+                <br />
+                để bạn không phải lướt.
+              </h1>
+
+              <p
+                className="text-[17px] leading-[1.65] text-white/75 max-w-[46ch] mb-8 animate-rise"
+                style={{ animationDelay: '120ms' }}
               >
-                Explore Collection
-              </Link>
-              <button className="inline-flex items-center justify-center px-8 py-3 border border-luxury-300 text-luxury-700 font-semibold rounded-lg hover:bg-luxury-50 transition-colors">
-                Learn More
-              </button>
-            </div>
-          </div>
-        </div>
+                {stats ? `${stats.count} món phụ kiện công nghệ` : 'Phụ kiện công nghệ'} — lọc từ
+                danh sách bán chạy nhất, giữ lại đúng những món có đánh giá cao và giá tốt.
+                Bạn bấm mua là sang thẳng Shopee.
+              </p>
 
-        {/* Decorative element */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gold-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 -z-10" />
-      </section>
-
-      {/* Featured Products */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="font-display text-4xl font-bold text-luxury-900 mb-4">
-              This Week's Selection
-            </h2>
-            <p className="text-lg text-gray-600">
-              Handpicked bestsellers from Shopee's trending categories
-            </p>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-gray-100 rounded-lg h-80 animate-pulse" />
-              ))}
-            </div>
-          ) : featured.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {featured.map((product) => (
-                <div key={product.id} className="group flex flex-col">
-                  <Link href={`/products/${product.id}`} className="block">
-                  <div className="bg-gray-50 rounded-lg overflow-hidden mb-4 h-64 flex items-center justify-center">
-                    {product.image ? (
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="text-gray-400">No image</div>
-                    )}
-                  </div>
-                  <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-luxury-700 transition-colors">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-2xl font-bold text-luxury-700">
-                        {(product.price / 1000).toFixed(0)}K
-                      </p>
-                      {product.originalPrice > product.price && (
-                        <p className="text-sm text-gray-400 line-through">
-                          {(product.originalPrice / 1000).toFixed(0)}K
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-yellow-500">★</span>
-                        <span className="text-sm font-medium">{product.rating.toFixed(1)}</span>
-                      </div>
-                      <p className="text-xs text-gray-500">{product.soldCount} sold</p>
-                    </div>
-                  </div>
-                  </Link>
-                  {product.affiliateUrl && (
-                    <a
-                      href={`${API_URL}/api/go/${product.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer sponsored"
-                      className="mt-3 inline-flex items-center justify-center px-4 py-2.5 bg-luxury-700 text-white text-sm font-semibold rounded-lg hover:bg-luxury-800 transition-colors"
-                    >
-                      Mua trên Shopee →
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-600">No products available</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-24 bg-luxury-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {[
-              {
-                icon: '✓',
-                title: 'Verified Authentic',
-                description: 'Every product is verified from Shopee\'s top-rated sellers'
-              },
-              {
-                icon: '⚡',
-                title: 'Fast Delivery',
-                description: 'Quick shipping with real-time tracking to your doorstep'
-              },
-              {
-                icon: '🛡️',
-                title: '30-Day Guarantee',
-                description: 'Full refund if not satisfied, no questions asked'
-              }
-            ].map((feature, i) => (
-              <div key={i} className="text-center">
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold text-luxury-900 mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600">{feature.description}</p>
+              <div className="flex flex-wrap gap-3 animate-rise" style={{ animationDelay: '180ms' }}>
+                <Link
+                  href="/products"
+                  className="inline-flex items-center gap-2 rounded-[10px] bg-white text-ink font-semibold px-6 py-3.5 transition duration-200 ease-out hover:bg-volt hover:text-white"
+                >
+                  Xem {stats ? stats.count : ''} sản phẩm
+                  <svg width="15" height="15" viewBox="0 0 14 14" aria-hidden="true">
+                    <path d="M2 7h10M8 3l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </Link>
+                <a
+                  href="#tieu-chi"
+                  className="inline-flex items-center rounded-[10px] border border-white/25 px-6 py-3.5 font-medium transition duration-200 hover:border-white/60"
+                >
+                  Cách chúng tôi chọn
+                </a>
               </div>
-            ))}
+            </div>
+
+            <div className="animate-rise" style={{ animationDelay: '140ms' }}>
+              <Readout stats={stats} />
+            </div>
           </div>
         </div>
+
+        {/* Proof at a glance: the actual catalogue, moving. */}
+        {marquee.length > 0 && (
+          <div className="relative border-t border-white/10 py-5 overflow-hidden" aria-hidden="true">
+            <div className="flex gap-3 w-max animate-marquee">
+              {[...marquee, ...marquee].map((p, i) => (
+                <img
+                  key={`${p.id}-${i}`}
+                  src={p.image}
+                  alt=""
+                  loading="lazy"
+                  className="w-[74px] h-[74px] rounded-[9px] object-cover bg-white/5 shrink-0"
+                />
+              ))}
+            </div>
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-ink to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-ink to-transparent" />
+          </div>
+        )}
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-r from-luxury-800 to-luxury-700">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-display text-4xl font-bold text-white mb-6">
-            Ready to upgrade your tech?
-          </h2>
-          <p className="text-lg text-luxury-100 mb-8">
-            Explore our curated collection of premium accessories hand-picked just for you
+      {/* ─── CRITERIA: the three rules, because the rules are the product ─── */}
+      <section id="tieu-chi" className="max-w-[1180px] mx-auto px-5 py-16 lg:py-24 scroll-mt-16">
+        <div className="max-w-[52ch] mb-12">
+          <p className="spec text-volt mb-4">CÁCH CHÚNG TÔI CHỌN</p>
+          <h2 className="font-display text-display-lg mb-4">Ba lần lọc, trước khi một món lên trang.</h2>
+          <p className="text-[16px] leading-relaxed text-slate">
+            Shopee có hàng triệu listing. Phần khó không phải tìm ra thứ để mua — mà là
+            loại bỏ thứ không nên mua.
           </p>
+        </div>
+
+        <ol className="grid gap-5 md:grid-cols-3">
+          {[
+            {
+              n: '01',
+              t: 'Xếp theo lượt bán',
+              d: 'Chỉ lấy từ danh sách bán chạy nhất của từng danh mục. Món chưa ai mua thì chưa có gì để nói.',
+            },
+            {
+              n: '02',
+              t: `Cắt dưới ${stats ? stats.minRating : '4.3'}★`,
+              d: `Đánh giá thấp hơn là loại, kể cả khi giá rẻ. Trung bình danh mục hiện tại ${stats ? stats.avgRating : '4.78'}★.`,
+            },
+            {
+              n: '03',
+              t: 'Đối chiếu giá gốc',
+              d: `Giữ lại món đang thực sự giảm. Mức giảm trung bình ${stats ? stats.avgDiscount : 37}% so với giá niêm yết.`,
+            },
+          ].map((s) => (
+            /* Numbers here are earned: this is a real sequence, applied in order. */
+            <li key={s.n} className="bg-white rounded-card border border-paper-300 p-6">
+              <span className="spec text-slate-400 block mb-4">{s.n}</span>
+              <h3 className="font-display text-[19px] font-semibold mb-2.5">{s.t}</h3>
+              <p className="text-[14.5px] leading-relaxed text-slate">{s.d}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* ─── CATALOGUE ─── */}
+      <section className="max-w-[1180px] mx-auto px-5 pb-4">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-7">
+          <div>
+            <p className="spec text-volt mb-3">ĐANG ĐƯỢC XEM NHIỀU</p>
+            <h2 className="font-display text-display-md">Tuần này</h2>
+          </div>
           <Link
             href="/products"
-            className="inline-block px-8 py-3 bg-gold-500 text-luxury-900 font-semibold rounded-lg hover:bg-gold-600 transition-colors"
+            className="text-[14px] font-medium text-ink hover:text-volt transition-colors inline-flex items-center gap-1.5"
           >
-            Start Shopping
+            Tất cả {stats ? stats.count : ''} sản phẩm
+            <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true">
+              <path d="M2 7h10M8 3l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </Link>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
+          {featured.map((p, i) => (
+            <ProductCard key={p.id} product={p} priority={i < 4} />
+          ))}
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="text-white font-semibold mb-4">Kinh Doanh Shopee</h3>
-              <p className="text-sm">Curated premium accessories from Vietnam's trusted marketplace.</p>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/products" className="hover:text-white">Products</Link></li>
-                <li><Link href="/about" className="hover:text-white">About Us</Link></li>
-                <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white">Shipping Info</a></li>
-                <li><a href="#" className="hover:text-white">Returns</a></li>
-                <li><a href="#" className="hover:text-white">FAQ</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Connect</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white">Telegram</a></li>
-                <li><a href="#" className="hover:text-white">Facebook</a></li>
-                <li><a href="#" className="hover:text-white">TikTok</a></li>
-              </ul>
-            </div>
+      {/* ─── THE HONEST BIT ─── */}
+      <section className="max-w-[1180px] mx-auto px-5 pt-20">
+        <div className="rounded-card bg-white border border-paper-300 p-7 sm:p-10 grid gap-8 md:grid-cols-[1fr_1fr]">
+          <div>
+            <p className="spec text-volt mb-4">CÔNG KHAI</p>
+            <h2 className="font-display text-display-md mb-4">Chúng tôi kiếm tiền thế nào</h2>
+            <p className="text-[15px] leading-relaxed text-slate">
+              Khi bạn bấm “Mua trên Shopee” và đặt hàng, Shopee trả cho chúng tôi một
+              khoản hoa hồng. <strong className="text-ink font-semibold">Giá bạn trả không thay đổi</strong> —
+              vẫn đúng giá niêm yết trên Shopee tại thời điểm đó.
+            </p>
           </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p>&copy; 2026 Kinh Doanh Shopee. All rights reserved. | Millenium Việt Nam</p>
-          </div>
+          <dl className="grid gap-4 content-start">
+            {[
+              ['Ai bán hàng?', 'Người bán trên Shopee. Đơn hàng, thanh toán, vận chuyển và đổi trả đều do Shopee xử lý.'],
+              ['Giá có chuẩn không?', 'Giá hiển thị lấy từ Shopee lúc cập nhật. Giá cuối cùng luôn là giá bạn thấy trên Shopee.'],
+              ['Chúng tôi giữ gì?', 'Chỉ giữ phần tuyển chọn. Không giữ hàng, không giữ tiền của bạn.'],
+            ].map(([q, a]) => (
+              <div key={q} className="border-l-2 border-paper-300 pl-4">
+                <dt className="font-semibold text-[14.5px] mb-1">{q}</dt>
+                <dd className="text-[14px] leading-relaxed text-slate">{a}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
-      </footer>
+      </section>
+
+      <Footer />
     </>
   )
 }

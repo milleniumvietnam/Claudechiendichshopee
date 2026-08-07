@@ -1,134 +1,183 @@
+import { useState } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
-import { useState } from 'react'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL
-const SITE_URL = 'https://deal.milleniumvietnam.com'
+import Nav from '../../components/Nav'
+import Footer from '../../components/Footer'
+import ProductCard from '../../components/ProductCard'
+import { price, catLabel, API_URL, SITE_URL } from '../../lib/format'
 
 export async function getServerSideProps({ params }) {
   try {
-    const res = await fetch(`${API_URL}/api/products/${params.id}`)
-    if (!res.ok) return { notFound: true }
-    const product = await res.json()
-    return { props: { product } }
+    const [pRes, allRes] = await Promise.all([
+      fetch(`${API_URL}/api/products/${params.id}`),
+      fetch(`${API_URL}/api/products?limit=100`),
+    ])
+    if (!pRes.ok) return { notFound: true }
+    const product = await pRes.json()
+    const all = (await allRes.json()).products || []
+    const related = all
+      .filter((x) => x.category === product.category && x.id !== product.id)
+      .slice(0, 4)
+    return { props: { product, related } }
   } catch (e) {
     return { notFound: true }
   }
 }
 
-export default function ProductDetail({ product }) {
+export default function ProductDetail({ product: p, related }) {
   const [copied, setCopied] = useState(false)
-  const pageUrl = `${SITE_URL}/products/${product.id}`
-  const buyUrl = `${API_URL}/api/go/${product.id}`
-  const priceK = (n) => `${Math.round(n / 1000)}K`
-  const shareText = `${product.name} chỉ ${priceK(product.price)} — xem ngay!`
+  const pageUrl = `${SITE_URL}/products/${p.id}`
+  const buyUrl = `${API_URL}/api/go/${p.id}`
+  const off = p.discountPercent > 0 && p.originalPrice > p.price
+  const saved = off ? p.originalPrice - p.price : 0
 
-  const fbShare = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`
-  const zaloShare = `https://zalo.me/share?url=${encodeURIComponent(pageUrl)}`
-
-  const copyLink = async () => {
-    try { await navigator.clipboard.writeText(pageUrl); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch {}
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(pageUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch (e) {}
   }
 
   return (
     <>
       <Head>
-        <title>{product.name} — {priceK(product.price)} | Kinh Doanh Shopee</title>
-        <meta name="description" content={(product.description || product.name).slice(0, 155)} />
-        {/* Open Graph — so FB/Zalo shares show the image + title */}
+        <title>{`${p.name} — ${price(p.price)} | Đáng Mua`}</title>
+        <meta name="description" content={`${p.name} — ${price(p.price)}${off ? `, giảm ${p.discountPercent}% từ ${price(p.originalPrice)}` : ''}. Đánh giá ${p.rating}★ trên Shopee.`} />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta property="og:type" content="product" />
-        <meta property="og:title" content={product.name} />
-        <meta property="og:description" content={`Chỉ ${priceK(product.price)}${product.originalPrice > product.price ? ` (giảm từ ${priceK(product.originalPrice)})` : ''} · ⭐ ${product.rating}`} />
-        <meta property="og:image" content={product.image} />
+        <meta property="og:title" content={p.name} />
+        <meta property="og:description" content={`${price(p.price)}${off ? ` · giảm ${p.discountPercent}%` : ''} · ${p.rating}★`} />
+        <meta property="og:image" content={p.image} />
         <meta property="og:url" content={pageUrl} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={product.name} />
-        <meta name="twitter:image" content={product.image} />
       </Head>
 
-      {/* Nav */}
-      <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="font-display font-bold text-xl text-luxury-800">Kinh Doanh Shopee</Link>
-          <Link href="/products" className="text-sm text-gray-600 hover:text-luxury-700">← Tất cả sản phẩm</Link>
-        </div>
-      </nav>
+      <Nav />
 
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          {/* Image */}
-          <div className="bg-gray-50 rounded-2xl overflow-hidden aspect-square flex items-center justify-center">
-            {product.image
-              ? <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-              : <span className="text-gray-400">No image</span>}
+      <div className="max-w-[1180px] mx-auto px-5 pt-5">
+        <Link href="/products" className="spec text-slate hover:text-ink transition-colors inline-flex items-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true">
+            <path d="M12 7H2M6 3L2 7l4 4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          TẤT CẢ SẢN PHẨM
+        </Link>
+      </div>
+
+      <article className="max-w-[1180px] mx-auto px-5 pt-6 pb-4 grid lg:grid-cols-2 gap-8 lg:gap-14">
+        <div className="relative rounded-card overflow-hidden bg-paper-200 border border-paper-300 aspect-square">
+          {p.image ? (
+            <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="absolute inset-0 grid place-items-center spec">KHÔNG CÓ ẢNH</span>
+          )}
+          {off && (
+            <span className="absolute top-3.5 left-3.5 spec-chip bg-ember text-white font-bold text-[12px] px-2.5 py-1.5">
+              −{p.discountPercent}%
+            </span>
+          )}
+        </div>
+
+        <div className="lg:py-2">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="spec text-ink font-medium">★ {p.rating?.toFixed(1)}</span>
+            <span aria-hidden="true" className="text-slate-200">·</span>
+            <span className="spec">{catLabel(p.category)}</span>
           </div>
 
-          {/* Info */}
-          <div>
-            <p className="text-sm text-luxury-600 font-medium mb-2 uppercase tracking-wide">{product.category}</p>
-            <h1 className="font-display text-2xl md:text-3xl font-bold text-luxury-900 mb-4 leading-snug">{product.name}</h1>
+          <h1 className="font-display text-display-md leading-[1.15] mb-6">{p.name}</h1>
 
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-yellow-500">★ {product.rating?.toFixed(1)}</span>
-              {product.clickCount > 0 && <span className="text-sm text-gray-500">· {product.clickCount} lượt quan tâm</span>}
-            </div>
-
-            <div className="flex items-end gap-3 mb-6">
-              <span className="text-4xl font-bold text-luxury-700">{priceK(product.price)}</span>
-              {product.originalPrice > product.price && (
-                <>
-                  <span className="text-lg text-gray-400 line-through mb-1">{priceK(product.originalPrice)}</span>
-                  {product.discountPercent > 0 && (
-                    <span className="mb-1.5 px-2 py-0.5 bg-red-100 text-red-600 text-sm font-semibold rounded">-{product.discountPercent}%</span>
-                  )}
-                </>
-              )}
-            </div>
-
-            {product.description && (
-              <p className="text-gray-600 mb-6 leading-relaxed">{product.description}</p>
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-1">
+            <span className="font-mono font-bold text-[34px] tracking-[-0.03em]">{price(p.price)}</span>
+            {off && (
+              <span className="font-mono text-[16px] text-slate-400 line-through">{price(p.originalPrice)}</span>
             )}
+          </div>
+          {off && (
+            <p className="text-[14px] text-jade font-medium mb-7">Rẻ hơn {price(saved)} so với giá niêm yết</p>
+          )}
+          {!off && <div className="mb-7" />}
 
-            {/* Primary CTA */}
-            {product.affiliateUrl && (
-              <a
-                href={buyUrl}
-                target="_blank"
-                rel="noopener noreferrer sponsored"
-                className="block text-center px-8 py-4 bg-luxury-700 text-white text-lg font-semibold rounded-xl hover:bg-luxury-800 transition-colors shadow-luxury mb-4"
-              >
-                Mua trên Shopee →
-              </a>
-            )}
+          <a
+            href={buyUrl}
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="btn-buy text-[16px] py-4 mb-3"
+          >
+            Mua trên Shopee
+            <svg width="16" height="16" viewBox="0 0 14 14" aria-hidden="true">
+              <path d="M3 11L11 3M11 3H5M11 3v6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </a>
+          <p className="text-[13px] text-slate text-center mb-8">
+            Mở Shopee ở tab mới · giá không đổi
+          </p>
 
-            {/* Trust */}
-            <div className="grid grid-cols-3 gap-2 text-center text-xs text-gray-600 mb-8">
-              <div className="bg-luxury-50 rounded-lg py-3"><div className="text-lg">✓</div>Hàng chính hãng</div>
-              <div className="bg-luxury-50 rounded-lg py-3"><div className="text-lg">🚚</div>Giao toàn quốc</div>
-              <div className="bg-luxury-50 rounded-lg py-3"><div className="text-lg">🛡️</div>Đổi trả Shopee</div>
-            </div>
-
-            {/* Share */}
-            <div className="border-t border-gray-100 pt-6">
-              <p className="text-sm font-medium text-gray-700 mb-3">Chia sẻ cho bạn bè:</p>
-              <div className="flex flex-wrap gap-3">
-                <a href={fbShare} target="_blank" rel="noopener noreferrer"
-                  className="px-4 py-2 bg-[#1877F2] text-white text-sm font-medium rounded-lg hover:opacity-90">Facebook</a>
-                <a href={zaloShare} target="_blank" rel="noopener noreferrer"
-                  className="px-4 py-2 bg-[#0068FF] text-white text-sm font-medium rounded-lg hover:opacity-90">Zalo</a>
-                <button onClick={copyLink}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50">
-                  {copied ? '✓ Đã copy' : 'Copy link'}
-                </button>
+          {/* What actually happens next — removes the last hesitation. */}
+          <dl className="rounded-[12px] border border-paper-300 bg-white divide-y divide-paper-300 mb-6">
+            {[
+              ['Người bán', 'Shop trên Shopee'],
+              ['Thanh toán & vận chuyển', 'Shopee xử lý'],
+              ['Đổi trả', 'Theo chính sách Shopee'],
+              ['Giá cuối cùng', 'Giá hiển thị trên Shopee'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between gap-4 px-4 py-3">
+                <dt className="spec">{k.toUpperCase()}</dt>
+                <dd className="text-[13.5px] font-medium text-right">{v}</dd>
               </div>
-            </div>
+            ))}
+          </dl>
+
+          <div className="flex items-center gap-2.5">
+            <span className="spec shrink-0">CHIA SẺ</span>
+            <a
+              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="h-9 px-3.5 rounded-lg border border-paper-300 bg-white text-[13px] font-medium hover:border-slate-200 transition-colors inline-flex items-center"
+            >Facebook</a>
+            <a
+              href={`https://zalo.me/share?url=${encodeURIComponent(pageUrl)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="h-9 px-3.5 rounded-lg border border-paper-300 bg-white text-[13px] font-medium hover:border-slate-200 transition-colors inline-flex items-center"
+            >Zalo</a>
+            <button
+              onClick={copy}
+              className="h-9 px-3.5 rounded-lg border border-paper-300 bg-white text-[13px] font-medium hover:border-slate-200 transition-colors cursor-pointer"
+            >
+              {copied ? 'Đã chép link' : 'Chép link'}
+            </button>
           </div>
         </div>
+      </article>
 
-        <div className="mt-12 text-center">
-          <Link href="/products" className="text-luxury-700 font-medium hover:underline">← Xem thêm sản phẩm khác</Link>
+      {related.length > 0 && (
+        <section className="max-w-[1180px] mx-auto px-5 pt-14">
+          <h2 className="font-display text-display-md mb-6">Cùng nhóm {p.category}</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
+            {related.map((r) => <ProductCard key={r.id} product={r} />)}
+          </div>
+        </section>
+      )}
+
+      {/* On a phone the buy action follows you down the page. */}
+      <div className="lg:hidden sticky bottom-0 z-40 mt-14 bg-paper/95 backdrop-blur-md border-t border-paper-300 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="flex items-center gap-3">
+          <div className="min-w-0">
+            <p className="font-mono font-bold text-[17px] leading-none">{price(p.price)}</p>
+            {off && <p className="spec text-jade mt-1">−{p.discountPercent}%</p>}
+          </div>
+          <a
+            href={buyUrl}
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="btn-buy flex-1 py-3.5 text-[15px]"
+          >
+            Mua trên Shopee
+          </a>
         </div>
       </div>
+
+      <Footer />
     </>
   )
 }
