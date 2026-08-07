@@ -151,7 +151,7 @@ Ba câu khác cũng đang nói sai, đã sửa:
 
 Trung thực về giới hạn hiện tại:
 
-1. **Chưa có ảnh chi tiết** — mỗi sản phẩm chỉ 1 ảnh. API của Shopee **có sẵn 6–9 ảnh mỗi món** và đã lấy thử được; chỉ còn chờ thêm cột `images` vào giao diện. Đây là việc đáng làm tiếp theo.
+1. ~~Chưa có ảnh chi tiết~~ — **XONG 08/08/2026**: cả 38 sản phẩm có thư viện 6 ảnh thật từ Shopee, trang chi tiết có dải thumbnail đổi ảnh (component `Gallery.jsx`).
 2. **Chưa có mô tả** — trường `description` trống, nên trang chi tiết dựa vào tên sản phẩm.
 3. **Chưa có nội dung đánh giá** — mới có *số lượng* đánh giá, chưa có *lời* đánh giá. API có trả nội dung review.
 4. **Số lượt bán: không lấy được** — Shopee đã ngừng công bố (`historical_sold = null` ở cả 40 món kiểm thử). Không phải thiếu sót của bản quét; đừng tốn công tìm lại.
