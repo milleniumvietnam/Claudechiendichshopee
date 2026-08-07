@@ -13,7 +13,7 @@ generator client {
 // Products from Shopee
 model Product {
   id                String      @id @default(cuid())
-  shopeeId          Int         @unique
+  shopeeId          String      @unique // Shopee item_id (11+ digits, stored as string)
   name              String
   description       String?     @db.Text
   price             Int         // VND
@@ -25,7 +25,7 @@ model Product {
   ratingCount       Int
   soldCount         Int
   stock             Int
-  shopId            Int
+  shopId            String
   shopName          String
   sellerLocation    String?
   category          String

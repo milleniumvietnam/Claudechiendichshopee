@@ -11,6 +11,7 @@ import { createOrder, getOrders, getOrderById, updateOrderStatus } from './route
 import { getProducts, getFeaturedProducts, getProductById } from './routes/products.js';
 import { createPaymentQR, handlePaymentWebhook } from './routes/payments.js';
 import { goToAffiliate, setAffiliate, affiliateStats } from './routes/affiliate.js';
+import { requireAdmin, importProducts } from './routes/admin.js';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -75,12 +76,13 @@ app.post('/api/payments/qr', createPaymentQR);
 app.post('/api/payments/webhook', handlePaymentWebhook);
 
 // Affiliate Routes
-app.get('/api/go/:productId', goToAffiliate);          // tracked redirect to Shopee/TikTok
-app.patch('/api/products/:id/affiliate', setAffiliate); // admin: set affiliate link
-app.get('/api/admin/affiliate-stats', affiliateStats);  // click leaderboard
+app.get('/api/go/:productId', goToAffiliate);                       // public: tracked redirect to Shopee/TikTok
+app.patch('/api/products/:id/affiliate', requireAdmin, setAffiliate); // admin: set affiliate link
+app.get('/api/admin/affiliate-stats', requireAdmin, affiliateStats);  // admin: click leaderboard
+app.post('/api/admin/import-products', requireAdmin, importProducts); // admin: bulk import from Shopee
 
 // Admin Stats
-app.get('/api/admin/stats', async (req, res) => {
+app.get('/api/admin/stats', requireAdmin, async (req, res) => {
   try {
     const [totalOrders, paidOrders, shippedOrders] = await Promise.all([
       prisma.order.count(),
