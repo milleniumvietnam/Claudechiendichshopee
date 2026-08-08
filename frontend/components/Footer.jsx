@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { TIKTOK_DEAL_URL } from '../lib/format'
 
 export default function Footer() {
   return (
@@ -19,6 +20,16 @@ export default function Footer() {
               <li><a href="tel:+84355554250" className="hover:text-white transition-colors">035 555 4250</a></li>
               <li><a href="mailto:milleniumvietnam@gmail.com" className="hover:text-white transition-colors break-all">milleniumvietnam@gmail.com</a></li>
               <li><Link href="/products" className="hover:text-white transition-colors">Tất cả sản phẩm</Link></li>
+              <li>
+                <a
+                  href={TIKTOK_DEAL_URL}
+                  target="_blank"
+                  rel="noopener noreferrer sponsored"
+                  className="hover:text-white transition-colors"
+                >
+                  Săn deal TikTok Shop ↗
+                </a>
+              </li>
             </ul>
           </div>
         </div>
@@ -28,7 +39,7 @@ export default function Footer() {
           {/* Disclosure sits in the footer where regulators and readers expect it. */}
           <p className="text-[12px] text-white/40 max-w-md sm:text-right">
             Trang có sử dụng liên kết tiếp thị. Khi bạn mua qua liên kết, chúng tôi
-            nhận hoa hồng từ Shopee — bạn không trả thêm đồng nào.
+            nhận hoa hồng từ Shopee hoặc TikTok Shop — bạn không trả thêm đồng nào.
           </p>
         </div>
       </div>

@@ -3,7 +3,7 @@ import Head from 'next/head'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
-import { API_URL, SITE_URL } from '../lib/format'
+import { API_URL, SITE_URL, TIKTOK_DEAL_URL } from '../lib/format'
 
 export async function getServerSideProps() {
   let products = []
@@ -151,6 +151,28 @@ export default function Products({ products }) {
             </button>
           </div>
         )}
+
+        {/* Second earning channel, stated in the site's own spec register —
+            an outbound pointer, not a banner shouting over the catalogue. */}
+        <div className="mt-10 rounded-card border border-paper-300 bg-white px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="spec mb-1">NGOÀI DANH MỤC NÀY</p>
+            <p className="text-[14px] text-slate">
+              Chưa thấy món ưng ý? TikTok Shop có dải hàng rộng hơn — giá không đổi khi đi qua link của chúng tôi.
+            </p>
+          </div>
+          <a
+            href={TIKTOK_DEAL_URL}
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="inline-flex items-center gap-1.5 rounded-[10px] border border-ink px-4 py-2.5 text-[14px] font-semibold hover:bg-ink hover:text-white transition-colors duration-200 whitespace-nowrap"
+          >
+            Săn deal TikTok Shop
+            <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true">
+              <path d="M3 11L11 3M11 3H5M11 3v6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </a>
+        </div>
       </div>
 
       <Footer />

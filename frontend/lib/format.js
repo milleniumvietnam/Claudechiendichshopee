@@ -30,3 +30,10 @@ export const shopBadge = (p) => {
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL
 export const SITE_URL = 'https://deal.milleniumvietnam.com'
+
+// AccessTrade TikTok Shop CPS deep link (campaign approved 08/08/2026, instant).
+// Format: /deep_link/v6/{publisherId}/{campaignId}?url_enc=base64(url).
+// Any purchase in the session after this click earns commission; the buyer pays
+// the same price.
+export const TIKTOK_DEAL_URL =
+  'https://go.isclix.com/deep_link/v6/7041276717188154130/6648523843406889655?sub4=oneatweb&url_enc=aHR0cHM6Ly93d3cudGlrdG9rLmNvbS8%3D'
