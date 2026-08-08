@@ -37,3 +37,6 @@ logs/
 tmp/
 temp/
 *.bak
+
+# Dữ liệu thô kéo từ AccessTrade — không đưa lên git
+scripts/datafeed-raw.json
