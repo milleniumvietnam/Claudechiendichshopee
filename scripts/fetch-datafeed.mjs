@@ -55,39 +55,56 @@ for (const c of campaigns.slice(0, 40)) {
   console.log(`     - ${String(name).slice(0, 46).padEnd(46)} id=${id} trạng thái=${status}`)
 }
 
-// Bước 2: datafeed sản phẩm. Thử vài dạng tham số vì tài liệu từng đổi.
-const tikTok = campaigns.find((c) => /tiktok/i.test(c.name || c.campaign_name || ''))
-const attempts = [
-  '/datafeeds?limit=20',
-  tikTok ? `/datafeeds?campaign_id=${tikTok.campaign_id || tikTok.id}&limit=20` : null,
-  '/datafeeds?merchant=tiktokshop&limit=20',
-  '/product_link?limit=20',
-  '/top_products?limit=20',
-].filter(Boolean)
+// Bước 2: quét datafeed qua nhiều trang để biết CÓ NHỮNG MERCHANT NÀO.
+// Lần chạy đầu chỉ lấy 20 dòng và trúng toàn 30shine — không đủ để kết luận
+// TikTok Shop có datafeed hay không.
+console.log('\nĐang quét datafeed để liệt kê merchant...')
 
-let feed = null
-for (const path of attempts) {
-  const r = await get(path)
-  const n = (r.json?.data || []).length
-  console.log(`  ${path.split('?')[0].padEnd(20)} → HTTP ${r.status}, ${n} sản phẩm`)
-  if (r.ok && n > 0) { feed = { path, data: r.json.data }; break }
-  await new Promise((s) => setTimeout(s, 600))
+const all = []
+const merchants = new Map()
+for (let page = 1; page <= 25; page++) {
+  const r = await get(`/datafeeds?limit=100&page=${page}`)
+  const rows = r.json?.data || []
+  if (!rows.length) break
+  for (const p of rows) {
+    all.push(p)
+    const m = p.merchant || '?'
+    merchants.set(m, (merchants.get(m) || 0) + 1)
+  }
+  process.stdout.write(`\r  trang ${page}: tổng ${all.length} sản phẩm, ${merchants.size} merchant`)
+  if (rows.length < 100) break
+  await new Promise((s) => setTimeout(s, 400))
+}
+console.log('\n')
+
+console.log('Merchant có trong datafeed:')
+for (const [m, n] of [...merchants].sort((a, b) => b[1] - a[1])) {
+  const flag = /tiktok/i.test(m) ? '  <<< TIKTOK' : ''
+  console.log(`  ${String(n).padStart(5)} sp   ${m}${flag}`)
 }
 
-if (!feed) {
-  console.error('\n❌ Không endpoint nào trả về sản phẩm. Có thể datafeed chỉ mở sau khi chiến dịch được duyệt.')
-  process.exit(2)
+const tikTokRows = all.filter((p) => /tiktok/i.test(p.merchant || '') || /tiktok/i.test(p.campaign || ''))
+console.log(`\nSản phẩm TikTok Shop trong datafeed: ${tikTokRows.length}`)
+
+if (!tikTokRows.length) {
+  console.log(
+    '\n⚠️  TikTok Shop KHÔNG có datafeed sản phẩm.\n' +
+    '   Đúng như bản chất chiến dịch smartlink: mình tự chọn sản phẩm bất kỳ rồi\n' +
+    '   tạo link, chứ sàn không phát hành danh mục sản phẩm cho publisher.\n' +
+    '   => Muốn bán hàng TikTok phải tự chọn từng món (xem phần kết luận trong chat).'
+  )
 }
 
 writeFileSync(
   new URL('./datafeed-raw.json', import.meta.url),
-  JSON.stringify(feed.data, null, 1),
+  JSON.stringify(tikTokRows.length ? tikTokRows : all, null, 1),
   'utf-8'
 )
+console.log(`\n✅ Đã ghi scripts/datafeed-raw.json (${(tikTokRows.length ? tikTokRows : all).length} dòng)`)
 
-const p = feed.data[0]
-console.log(`\n✅ Lấy được ${feed.data.length} sản phẩm từ ${feed.path.split('?')[0]}`)
-console.log(`   Đã ghi: scripts/datafeed-raw.json`)
-console.log(`   Các trường có sẵn: ${Object.keys(p).join(', ')}`)
-console.log(`   Mẫu: ${String(p.name || p.product_name || '?').slice(0, 60)}`)
-console.log(`        giá=${p.price ?? '?'}  ảnh=${p.image ? 'có' : 'không'}  link=${p.aff_link || p.url_link ? 'có' : 'không'}`)
+const p = (tikTokRows[0] || all[0])
+if (p) {
+  console.log(`   Trường có sẵn: ${Object.keys(p).join(', ')}`)
+  console.log(`   Mẫu: ${String(p.name || '?').slice(0, 60)}`)
+  console.log(`        giá=${p.price ?? '?'}  ảnh=${p.image ? 'có' : 'không'}  aff_link=${p.aff_link ? 'có' : 'không'}`)
+}

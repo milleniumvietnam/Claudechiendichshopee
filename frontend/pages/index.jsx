@@ -5,10 +5,23 @@ import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
 import { price, num, API_URL, SITE_URL } from '../lib/format'
 
-export async function getServerSideProps() {
+/**
+ * Rendered ahead of time and refreshed in the background every 5 minutes.
+ *
+ * This page used to render per request, which meant every visitor waited on the
+ * backend. The backend sleeps after ~15 minutes of quiet and takes ~33 seconds
+ * to wake, so the first visitor after a lull met a blank screen for half a
+ * minute — measured, not assumed. Now Vercel serves a prebuilt page instantly
+ * and refreshes it behind the scenes; the catalogue is a snapshot that only
+ * changes when we re-run the import, so five-minute-old data costs nothing.
+ */
+export async function getStaticProps() {
   let products = []
   try {
-    const r = await fetch(`${API_URL}/api/products?limit=100`)
+    const r = await fetch(`${API_URL}/api/products?limit=100`, {
+      // A cold backend must not stall the build; a stale page beats a hung one.
+      signal: AbortSignal.timeout(45000),
+    })
     products = (await r.json()).products || []
   } catch (e) {}
 
@@ -38,6 +51,9 @@ export async function getServerSideProps() {
       marquee: products.slice(0, 14),
       stats,
     },
+    // If the backend was asleep we hold nothing worth caching — retry in a
+    // minute rather than serving an empty catalogue for the next five.
+    revalidate: products.length ? 300 : 60,
   }
 }
 

@@ -5,13 +5,17 @@ import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
 import { API_URL, SITE_URL, TIKTOK_DEAL_URL } from '../lib/format'
 
-export async function getServerSideProps() {
+// Prebuilt and refreshed every 5 minutes — see the note in pages/index.jsx for
+// why this page no longer waits on the backend for each visitor.
+export async function getStaticProps() {
   let products = []
   try {
-    const r = await fetch(`${API_URL}/api/products?limit=200`)
+    const r = await fetch(`${API_URL}/api/products?limit=200`, {
+      signal: AbortSignal.timeout(45000),
+    })
     products = (await r.json()).products || []
   } catch (e) {}
-  return { props: { products } }
+  return { props: { products }, revalidate: products.length ? 300 : 60 }
 }
 
 const SORTS = [

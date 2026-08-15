@@ -7,21 +7,39 @@ import ProductCard from '../../components/ProductCard'
 import Gallery from '../../components/Gallery'
 import { price, priceLabel, num, catLabel, reviews, shopBadge, API_URL, SITE_URL } from '../../lib/format'
 
-export async function getServerSideProps({ params }) {
+// Every product page is prebuilt at deploy time, so the page carrying the buy
+// button never waits on a sleeping backend. A product added later still works:
+// fallback 'blocking' renders it on first request, then caches it like the rest.
+export async function getStaticPaths() {
+  let products = []
+  try {
+    const r = await fetch(`${API_URL}/api/products?limit=200`, {
+      signal: AbortSignal.timeout(45000),
+    })
+    products = (await r.json()).products || []
+  } catch (e) {}
+  return {
+    paths: products.map((p) => ({ params: { id: p.id } })),
+    fallback: 'blocking',
+  }
+}
+
+export async function getStaticProps({ params }) {
   try {
     const [pRes, allRes] = await Promise.all([
-      fetch(`${API_URL}/api/products/${params.id}`),
-      fetch(`${API_URL}/api/products?limit=100`),
+      fetch(`${API_URL}/api/products/${params.id}`, { signal: AbortSignal.timeout(45000) }),
+      fetch(`${API_URL}/api/products?limit=100`, { signal: AbortSignal.timeout(45000) }),
     ])
-    if (!pRes.ok) return { notFound: true }
+    if (!pRes.ok) return { notFound: true, revalidate: 60 }
     const product = await pRes.json()
     const all = (await allRes.json()).products || []
     const related = all
       .filter((x) => x.category === product.category && x.id !== product.id)
       .slice(0, 4)
-    return { props: { product, related } }
+    return { props: { product, related }, revalidate: 300 }
   } catch (e) {
-    return { notFound: true }
+    // A backend hiccup must not bake a permanent 404 — retry in a minute.
+    return { notFound: true, revalidate: 60 }
   }
 }
 
